@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
 
+from conftest import mint_note_with_id
 from mcp_local_notes.core import notes, vocabulary
 from mcp_local_notes.core.config import Corpus
 from mcp_local_notes.core.errors import NotesError, Rule
@@ -101,14 +102,8 @@ def given_note_titled(title: str, corpus: Corpus) -> None:
 
 @given(parsers.parse('a note with id "{note_id}" already exists'))
 def given_note_with_id(note_id: str, corpus: Corpus) -> None:
-    """note_id is already a normalized slug, so using it as the title mints
-    exactly that id."""
-    notes.new_note(
-        title=note_id,
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    """Pre-seed the corpus with a note whose id is exactly note_id."""
+    mint_note_with_id(note_id, corpus)
 
 
 @given(parsers.parse('the topic vocabulary contains "{name}"'))

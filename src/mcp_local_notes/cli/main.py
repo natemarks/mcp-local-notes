@@ -76,6 +76,48 @@ def new_note_command(
     typer.echo(f"created note: {note.id}")
 
 
+@app.command("update-note")
+@handle_notes_errors
+def update_note_command(  # pylint: disable=too-many-arguments
+    note_id: str,
+    *,
+    title: str = typer.Option(None, "--title"),
+    add_tag: list[str] = typer.Option([], "--add-tag"),
+    remove_tag: list[str] = typer.Option([], "--remove-tag"),
+    add_related: list[str] = typer.Option([], "--add-related"),
+    remove_related: list[str] = typer.Option([], "--remove-related"),
+    approve_topic: list[str] = typer.Option([], "--approve-topic"),
+) -> None:
+    """Edit an existing note's frontmatter and regenerate its ABox entry."""
+    note = notes.update_note(
+        note_id,
+        get_corpus(),
+        title=title,
+        add_tags=add_tag,
+        remove_tags=remove_tag,
+        add_related=add_related,
+        remove_related=remove_related,
+        approve_topics=approve_topic,
+    )
+    typer.echo(f"updated note: {note.id}")
+
+
+@app.command("sync-note")
+@handle_notes_errors
+def sync_note_command(note_id: str) -> None:
+    """Regenerate a single note's ABox entry from its current frontmatter."""
+    note = notes.sync_note(note_id, get_corpus())
+    typer.echo(f"synced note: {note.id}")
+
+
+@app.command("rebuild-abox")
+@handle_notes_errors
+def rebuild_abox_command() -> None:
+    """Rebuild the entire ABox from every note's current frontmatter."""
+    notes.rebuild_abox(get_corpus())
+    typer.echo("rebuilt abox.ttl")
+
+
 @app.command("list-topics")
 def list_topics_command() -> None:
     """List the current controlled topic vocabulary."""

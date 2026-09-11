@@ -1,5 +1,5 @@
-"""Note lifecycle operations: new_note (this ticket), plus update_note,
-sync_note, archive_note, delete_note (later tickets).
+"""Note lifecycle operations: new_note, update_note, sync_note,
+rebuild_abox (this ticket), plus archive_note, delete_note (later ticket).
 """
 
 from datetime import date
@@ -13,6 +13,19 @@ from mcp_local_notes.ontology import abox, tbox
 from mcp_local_notes.ontology.slug import normalize
 
 
+def _note_path(note_id: str, notes_dir: Path) -> Path:
+    return notes_dir / f"{note_id}.md"
+
+
+def get_note(note_id: str, notes_dir: Path) -> Note:
+    """Load a single note's current on-disk frontmatter."""
+    return load_markdown(_note_path(note_id, notes_dir).read_text())
+
+
+def _write_note(note: Note, notes_dir: Path) -> None:
+    _note_path(note.id, notes_dir).write_text(dump_markdown(note))
+
+
 def _scan_existing_notes(notes_dir: Path) -> list[Note]:
     """Every note currently on disk, parsed from its frontmatter."""
     if not notes_dir.exists():
@@ -24,16 +37,21 @@ def _scan_existing_notes(notes_dir: Path) -> list[Note]:
 
 
 def _check_for_duplicates(
-    title: str, aliases: list[str], existing: list[Note]
+    title: str,
+    aliases: list[str],
+    existing: list[Note],
+    exclude_id: str | None = None,
 ) -> None:
     """Reject a title/alias that normalizes to an existing note's title/alias.
 
     Which field of the NEW note caused the collision (title vs. alias)
     decides which Rule is raised -- not which field of the existing note
-    was hit.
+    was hit. exclude_id skips a note being renamed comparing against itself.
     """
     index: dict[str, str] = {}
     for other in existing:
+        if other.id == exclude_id:
+            continue
         index.setdefault(normalize(other.title), other.id)
         for alias in other.aliases:
             index.setdefault(normalize(alias), other.id)
@@ -131,15 +149,140 @@ def new_note(  # pylint: disable=too-many-arguments
     )
 
     corpus.notes_dir.mkdir(parents=True, exist_ok=True)
-    note_path = corpus.notes_dir / f"{note_id}.md"
-    note_path.write_text(dump_markdown(note))
+    _write_note(note, corpus.notes_dir)
 
     try:
         graph = abox.load(corpus.abox_path)
         abox.replace_note(graph, note_id, note.to_frontmatter())
         abox.save(graph, corpus.abox_path)
     except Exception:
-        note_path.unlink(missing_ok=True)
+        _note_path(note_id, corpus.notes_dir).unlink(missing_ok=True)
         raise
 
     return note
+
+
+def _check_related_exists(note_id: str, notes_dir: Path) -> None:
+    """Reject a related/part_of reference to a note id that doesn't exist."""
+    if not _note_path(note_id, notes_dir).exists():
+        raise NotesError(
+            Rule.RELATED_NOTE_NOT_FOUND,
+            f"related note not found: {note_id!r} does not exist",
+            {"related_id": note_id},
+        )
+
+
+def _apply_tag_edits(
+    note: Note,
+    add_tags: list[str] | None,
+    remove_tags: list[str] | None,
+    approve_topics: list[str] | None,
+    tbox_path: Path,
+) -> list[str]:
+    """The note's new tag list, validated against the vocabulary."""
+    new_tags = list(note.tags)
+    for tag in add_tags or []:
+        if tag not in new_tags:
+            new_tags.append(tag)
+    for tag in remove_tags or []:
+        if tag in new_tags:
+            new_tags.remove(tag)
+    _check_tags(new_tags, approve_topics or [], tbox_path)
+    return new_tags
+
+
+def _apply_related_edits(
+    note: Note,
+    add_related: list[str] | None,
+    remove_related: list[str] | None,
+    notes_dir: Path,
+) -> list[str]:
+    """The note's new related-id list, validated against existing notes."""
+    new_related = list(note.related)
+    for related_id in add_related or []:
+        _check_related_exists(related_id, notes_dir)
+        if related_id not in new_related:
+            new_related.append(related_id)
+    for related_id in remove_related or []:
+        if related_id in new_related:
+            new_related.remove(related_id)
+    return new_related
+
+
+def _apply_rename(
+    note: Note, new_title: str | None, notes_dir: Path
+) -> tuple[str, list[str]]:
+    """The note's new (title, aliases), preserving the old title as an
+    alias on a genuine rename (US-2.2); rejects a colliding new title."""
+    if new_title is None or new_title == note.title:
+        return note.title, list(note.aliases)
+
+    existing = _scan_existing_notes(notes_dir)
+    _check_for_duplicates(
+        new_title, note.aliases, existing, exclude_id=note.id
+    )
+    aliases = [note.title] + [
+        alias for alias in note.aliases if alias != note.title
+    ]
+    return new_title, aliases
+
+
+def update_note(  # pylint: disable=too-many-arguments
+    note_id: str,
+    corpus: Corpus,
+    *,
+    title: str | None = None,
+    add_tags: list[str] | None = None,
+    remove_tags: list[str] | None = None,
+    add_related: list[str] | None = None,
+    remove_related: list[str] | None = None,
+    approve_topics: list[str] | None = None,
+) -> Note:
+    """Edit an existing note's frontmatter and regenerate its ABox entry.
+
+    Renaming (a changed title) preserves the old title as an alias; the
+    id and filename never change (US-2.2). Every validation step runs
+    before the note file is rewritten, so a rejection leaves the note
+    untouched.
+    """
+    note = get_note(note_id, corpus.notes_dir)
+
+    note.tags = _apply_tag_edits(
+        note, add_tags, remove_tags, approve_topics, corpus.tbox_path
+    )
+    note.related = _apply_related_edits(
+        note, add_related, remove_related, corpus.notes_dir
+    )
+    note.title, note.aliases = _apply_rename(note, title, corpus.notes_dir)
+    note.modified = date.today().isoformat()
+
+    _write_note(note, corpus.notes_dir)
+
+    graph = abox.load(corpus.abox_path)
+    abox.replace_note(graph, note.id, note.to_frontmatter())
+    abox.save(graph, corpus.abox_path)
+
+    return note
+
+
+def sync_note(note_id: str, corpus: Corpus) -> Note:
+    """Regenerate a single note's ABox entry from its current on-disk
+    frontmatter, recovering from edits made outside any tool session."""
+    note = get_note(note_id, corpus.notes_dir)
+    graph = abox.load(corpus.abox_path)
+    abox.replace_note(graph, note.id, note.to_frontmatter())
+    abox.save(graph, corpus.abox_path)
+    return note
+
+
+def rebuild_abox(corpus: Corpus) -> None:
+    """Regenerate the entire ABox from every note's current frontmatter.
+
+    Built from a fresh graph rather than the old one, so a note id with
+    no corresponding file is simply never re-added -- no separate
+    "prune stale entries" pass is needed.
+    """
+    graph = abox.new_graph()
+    for note in _scan_existing_notes(corpus.notes_dir):
+        abox.replace_note(graph, note.id, note.to_frontmatter())
+    abox.save(graph, corpus.abox_path)

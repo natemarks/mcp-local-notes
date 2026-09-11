@@ -15,6 +15,11 @@ from rdflib.namespace import DCTERMS, SKOS
 from mcp_local_notes.ontology.tbox import NS
 
 
+def new_graph() -> Graph:
+    """An empty ABox graph, for a from-scratch rebuild."""
+    return Graph()
+
+
 def load(path: Path) -> Graph:
     """Parse an ABox Turtle file into a graph."""
     graph = Graph()
@@ -30,7 +35,9 @@ def save(graph: Graph, path: Path) -> None:
     graph.serialize(destination=path, format="turtle")
 
 
-def replace_note(graph: Graph, note_id: str, frontmatter: dict[str, Any]) -> None:
+def replace_note(
+    graph: Graph, note_id: str, frontmatter: dict[str, Any]
+) -> None:
     """Remove all existing triples for note_id, add the ones the given
     frontmatter dict implies (see Note.to_frontmatter for its shape)."""
     remove_note(graph, note_id)
