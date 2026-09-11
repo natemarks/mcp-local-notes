@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
 
-from conftest import mint_note_with_id
+from conftest import mint_note_with_id, seed_tbox_with_defaults
 from mcp_local_notes.core import notes, vocabulary
 from mcp_local_notes.core.config import Corpus
 from mcp_local_notes.core.errors import NotesError, Rule
@@ -47,8 +47,7 @@ def _tbox_path(tmp_path: Path) -> Path:
     (the Background creates a note BEFORE its own vocabulary-setup steps)."""
     path = tmp_path / "tbox.ttl"
     shutil.copy(BOOTSTRAP_TBOX, path)
-    vocabulary.add_topic("knowledge-graphs", path)
-    vocabulary.add_class("Concept", path)
+    seed_tbox_with_defaults(path)
     return path
 
 

@@ -15,7 +15,11 @@ from pytest_bdd import given, parsers, scenarios, then, when
 from rdflib import Literal
 from rdflib.namespace import DCTERMS
 
-from conftest import mint_intro_to_sparql, mint_note_with_id
+from conftest import (
+    mint_intro_to_sparql,
+    mint_note_with_id,
+    seed_tbox_with_defaults,
+)
 from mcp_local_notes.core import notes, vocabulary
 from mcp_local_notes.core.config import Corpus
 from mcp_local_notes.core.errors import NotesError, Rule
@@ -48,9 +52,9 @@ def _tbox_path(tmp_path: Path) -> Path:
     already exists, since vocabulary governance isn't what's under test."""
     path = tmp_path / "tbox.ttl"
     shutil.copy(BOOTSTRAP_TBOX, path)
-    for topic in ("knowledge-graphs", "semantic-web", "rdf"):
+    seed_tbox_with_defaults(path)
+    for topic in ("semantic-web", "rdf"):
         vocabulary.add_topic(topic, path)
-    vocabulary.add_class("Concept", path)
     return path
 
 

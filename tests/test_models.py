@@ -2,7 +2,12 @@
 
 import pytest
 
-from mcp_local_notes.core.models import Note, dump_markdown, load_markdown
+from mcp_local_notes.core.models import (
+    Note,
+    dump_markdown,
+    load_markdown,
+    parse_frontmatter,
+)
 
 
 @pytest.mark.unit
@@ -47,3 +52,13 @@ def test_dump_markdown_always_includes_empty_fields() -> None:
     assert "aliases: []" in text
     assert "related: []" in text
     assert "part_of: null" in text
+
+
+@pytest.mark.unit
+def test_parse_frontmatter_returns_raw_dict_without_defaulting() -> None:
+    """parse_frontmatter exposes exactly what's on disk, no defaulting --
+    so validation can tell "key absent" apart from "key present empty"."""
+    text = "---\nid: x\ntitle: X\ntype: Concept\n---\n"
+    raw = parse_frontmatter(text)
+    assert "tags" not in raw
+    assert raw["id"] == "x"

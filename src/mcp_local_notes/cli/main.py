@@ -4,12 +4,13 @@ No command re-implements a rule -- every command just calls straight into
 the matching core.* function and renders whatever it returns or raises.
 """
 
+import json
 from functools import wraps
 from typing import Any, Callable, TypeVar
 
 import typer
 
-from mcp_local_notes.core import notes, vocabulary
+from mcp_local_notes.core import notes, validate, vocabulary
 from mcp_local_notes.core.config import get_corpus, get_tbox_path
 from mcp_local_notes.core.errors import NotesError
 from mcp_local_notes.ontology.tbox import ROOT_TYPE
@@ -116,6 +117,27 @@ def rebuild_abox_command() -> None:
     """Rebuild the entire ABox from every note's current frontmatter."""
     notes.rebuild_abox(get_corpus())
     typer.echo("rebuilt abox.ttl")
+
+
+@app.command("validate")
+def validate_command(
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    """Report every consistency problem in the corpus. Never modifies a file."""
+    issues = validate.validate(get_corpus())
+    report = validate.build_report(issues)
+
+    if json_output:
+        typer.echo(json.dumps(report))
+    elif not issues:
+        typer.echo("no issues found")
+    else:
+        for issue in issues:
+            typer.echo(
+                f"[{issue.type.value}] {issue.note_id}: {issue.message}"
+            )
+
+    raise typer.Exit(code=0 if report["ok"] else 1)
 
 
 @app.command("list-topics")

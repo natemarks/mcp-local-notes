@@ -1,6 +1,5 @@
 """Unit tests for core.notes: new_note, update_note, sync_note, rebuild_abox."""
 
-import shutil
 from datetime import date
 from pathlib import Path
 
@@ -8,7 +7,11 @@ import pytest
 from rdflib import Literal
 from rdflib.namespace import DCTERMS
 
-from conftest import mint_intro_to_sparql
+from conftest import (
+    build_seeded_corpus,
+    mint_intro_to_sparql,
+    mint_sparql_basics,
+)
 from mcp_local_notes.core import notes, vocabulary
 from mcp_local_notes.core.config import Corpus
 from mcp_local_notes.core.errors import NotesError, Rule
@@ -16,32 +19,17 @@ from mcp_local_notes.core.models import dump_markdown, load_markdown
 from mcp_local_notes.ontology import abox
 from mcp_local_notes.ontology.tbox import NS
 
-BOOTSTRAP_TBOX = Path(__file__).parent.parent / "notes" / "tbox.ttl"
-
 
 @pytest.fixture(name="corpus")
 def _corpus(tmp_path: Path) -> Corpus:
-    """An isolated corpus with a bootstrap tbox.ttl and empty abox.ttl."""
-    tbox_path = tmp_path / "tbox.ttl"
-    abox_path = tmp_path / "abox.ttl"
-    shutil.copy(BOOTSTRAP_TBOX, tbox_path)
-    abox_path.write_text(
-        "@prefix : <https://notes.natenite.net/ontology#> .\n"
-    )
-    vocabulary.add_topic("knowledge-graphs", tbox_path)
-    vocabulary.add_class("Concept", tbox_path)
-    return Corpus(notes_dir=tmp_path, tbox_path=tbox_path, abox_path=abox_path)
+    """An isolated, pre-seeded corpus."""
+    return build_seeded_corpus(tmp_path)
 
 
 @pytest.mark.unit
 def test_new_note_creates_file_and_abox_entry(corpus: Corpus) -> None:
     """A valid new_note writes the note file and its ABox entry atomically."""
-    note = notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    note = mint_sparql_basics(corpus)
 
     assert note.id == "sparql-basics"
     note_file = corpus.notes_dir / "sparql-basics.md"
@@ -57,21 +45,11 @@ def test_new_note_creates_file_and_abox_entry(corpus: Corpus) -> None:
 @pytest.mark.unit
 def test_new_note_rejects_duplicate_title(corpus: Corpus) -> None:
     """A second note with the same title is rejected, no file/ABox change."""
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
     abox_before = corpus.abox_path.read_text()
 
     with pytest.raises(NotesError) as exc_info:
-        notes.new_note(
-            title="SPARQL basics",
-            tags=["knowledge-graphs"],
-            note_type="Concept",
-            corpus=corpus,
-        )
+        mint_sparql_basics(corpus)
     assert exc_info.value.rule == Rule.DUPLICATE_TITLE
     assert not (corpus.notes_dir / "sparql-basics-2.md").exists()
     assert corpus.abox_path.read_text() == abox_before
@@ -82,12 +60,7 @@ def test_new_note_rejects_case_punctuation_variant_as_duplicate(
     corpus: Corpus,
 ) -> None:
     """A differently-cased/punctuated title colliding on slug is a duplicate."""
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
     with pytest.raises(NotesError) as exc_info:
         notes.new_note(
             title="Sparql Basics",
@@ -179,12 +152,7 @@ def test_update_note_adding_a_tag_regenerates_abox_with_one_entry(
 ) -> None:
     """Adding a tag regenerates the ABox entry -- exactly one per note id."""
     vocabulary.add_topic("semantic-web", corpus.tbox_path)
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
 
     updated = notes.update_note(
         "sparql-basics", corpus, add_tags=["semantic-web"]
@@ -206,12 +174,7 @@ def test_update_note_renaming_preserves_old_title_as_alias(
     corpus: Corpus,
 ) -> None:
     """Renaming keeps the id/filename and preserves the old title as an alias."""
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
 
     updated = notes.update_note(
         "sparql-basics", corpus, title="Intro to SPARQL basics"
@@ -235,12 +198,7 @@ def test_update_note_rename_to_duplicate_title_is_rejected(
     corpus: Corpus,
 ) -> None:
     """A rename that collides with another note's title is rejected."""
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
     notes.new_note(
         title="RDF vs. property graphs",
         tags=["knowledge-graphs"],
@@ -261,12 +219,7 @@ def test_update_note_rename_to_duplicate_title_is_rejected(
 @pytest.mark.unit
 def test_update_note_rejects_nonexistent_related_note(corpus: Corpus) -> None:
     """Adding a related reference to a nonexistent note is rejected."""
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
 
     with pytest.raises(NotesError) as exc_info:
         notes.update_note(
@@ -278,12 +231,7 @@ def test_update_note_rejects_nonexistent_related_note(corpus: Corpus) -> None:
 @pytest.mark.unit
 def test_update_note_adds_valid_related_note_to_abox(corpus: Corpus) -> None:
     """A valid related reference produces a :relatesTo triple."""
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
     mint_intro_to_sparql(corpus)
 
     notes.update_note("sparql-basics", corpus, add_related=["intro-to-sparql"])
@@ -304,12 +252,7 @@ def test_sync_note_regenerates_abox_from_hand_edited_frontmatter(
     corpus: Corpus,
 ) -> None:
     """sync_note regenerates the ABox entry from the note's on-disk state."""
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
 
     # Simulate a hand edit outside any tool session: add a tag directly to
     # the file, without going through update_note (so the ABox is now stale).
@@ -332,12 +275,7 @@ def test_rebuild_abox_regenerates_from_current_frontmatter(
     corpus: Corpus,
 ) -> None:
     """rebuild_abox regenerates every note's entry from current frontmatter."""
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
     mint_intro_to_sparql(corpus)
 
     note_path = corpus.notes_dir / "sparql-basics.md"
@@ -355,12 +293,7 @@ def test_rebuild_abox_regenerates_from_current_frontmatter(
 @pytest.mark.unit
 def test_rebuild_abox_drops_entries_for_deleted_notes(corpus: Corpus) -> None:
     """rebuild_abox drops ABox entries for note ids with no corresponding file."""
-    notes.new_note(
-        title="SPARQL basics",
-        tags=["knowledge-graphs"],
-        note_type="Concept",
-        corpus=corpus,
-    )
+    mint_sparql_basics(corpus)
     mint_intro_to_sparql(corpus)
 
     (corpus.notes_dir / "intro-to-sparql.md").unlink()

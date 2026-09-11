@@ -67,8 +67,13 @@ def dump_markdown(note: Note, body: str = "") -> str:
     return f"---\n{frontmatter_yaml}---\n{body}"
 
 
+def parse_frontmatter(text: str) -> dict:
+    """The raw frontmatter dict, exactly as written -- no defaulting, so
+    validation can tell a genuinely missing field from one that's empty."""
+    _, frontmatter_text, _ = text.split("---\n", 2)
+    return yaml.safe_load(frontmatter_text)
+
+
 def load_markdown(text: str) -> Note:
     """Parse a note markdown file's text back into a Note."""
-    _, frontmatter_text, _ = text.split("---\n", 2)
-    data = yaml.safe_load(frontmatter_text)
-    return Note.from_frontmatter(data)
+    return Note.from_frontmatter(parse_frontmatter(text))
