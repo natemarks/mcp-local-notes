@@ -1,5 +1,5 @@
 """Note lifecycle operations: new_note, update_note, sync_note,
-rebuild_abox (this ticket), plus archive_note, delete_note (later ticket).
+rebuild_abox, archive_note, delete_note.
 """
 
 from datetime import date
@@ -8,7 +8,12 @@ from pathlib import Path
 from mcp_local_notes.core import vocabulary
 from mcp_local_notes.core.config import Corpus
 from mcp_local_notes.core.errors import NotesError, Rule
-from mcp_local_notes.core.models import Note, dump_markdown, load_markdown
+from mcp_local_notes.core.models import (
+    STATUS_ARCHIVED,
+    Note,
+    dump_markdown,
+    load_markdown,
+)
 from mcp_local_notes.ontology import abox, tbox
 from mcp_local_notes.ontology.slug import normalize
 
@@ -285,4 +290,50 @@ def rebuild_abox(corpus: Corpus) -> None:
     graph = abox.new_graph()
     for note in _scan_existing_notes(corpus.notes_dir):
         abox.replace_note(graph, note.id, note.to_frontmatter())
+    abox.save(graph, corpus.abox_path)
+
+
+def archive_note(note_id: str, corpus: Corpus) -> Note:
+    """Retire a note by setting its status, the safe default (US-2.4).
+    The note file and its ABox entry are left in place."""
+    note = get_note(note_id, corpus.notes_dir)
+    note.status = STATUS_ARCHIVED
+    note.modified = date.today().isoformat()
+    _write_note(note, corpus.notes_dir)
+
+    graph = abox.load(corpus.abox_path)
+    abox.replace_note(graph, note.id, note.to_frontmatter())
+    abox.save(graph, corpus.abox_path)
+
+    return note
+
+
+def _find_referencing_notes(note_id: str, notes_dir: Path) -> list[str]:
+    """Every note id whose related or part_of field points at note_id."""
+    return [
+        other.id
+        for other in _scan_existing_notes(notes_dir)
+        if note_id in other.related or other.part_of == note_id
+    ]
+
+
+def delete_note(note_id: str, corpus: Corpus, confirm: bool = False) -> None:
+    """Hard delete a note and its ABox entry.
+
+    Rejected with the referencing notes named if any other note points
+    at it, unless explicitly confirmed (US-5.1).
+    """
+    referencing = _find_referencing_notes(note_id, corpus.notes_dir)
+    if referencing and not confirm:
+        names = ", ".join(referencing)
+        raise NotesError(
+            Rule.DELETE_BLOCKED_BY_REFERENCES,
+            f"delete blocked: {names} references {note_id!r}",
+            {"note_id": note_id, "referencing_note_ids": referencing},
+        )
+
+    _note_path(note_id, corpus.notes_dir).unlink(missing_ok=True)
+
+    graph = abox.load(corpus.abox_path)
+    abox.remove_note(graph, note_id)
     abox.save(graph, corpus.abox_path)

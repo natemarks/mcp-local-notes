@@ -119,6 +119,25 @@ def rebuild_abox_command() -> None:
     typer.echo("rebuilt abox.ttl")
 
 
+@app.command("archive-note")
+@handle_notes_errors
+def archive_note_command(note_id: str) -> None:
+    """Archive a note: sets status, keeps the file and ABox entry."""
+    note = notes.archive_note(note_id, get_corpus())
+    typer.echo(f"archived note: {note.id}")
+
+
+@app.command("delete-note")
+@handle_notes_errors
+def delete_note_command(
+    note_id: str,
+    confirm: bool = typer.Option(False, "--confirm"),
+) -> None:
+    """Hard delete a note and its ABox entry."""
+    notes.delete_note(note_id, get_corpus(), confirm=confirm)
+    typer.echo(f"deleted note: {note_id}")
+
+
 @app.command("validate")
 def validate_command(
     json_output: bool = typer.Option(False, "--json"),

@@ -303,3 +303,68 @@ def test_rebuild_abox_drops_entries_for_deleted_notes(corpus: Corpus) -> None:
     graph = abox.load(corpus.abox_path)
     assert (NS["sparql-basics"], DCTERMS.title, None) in graph
     assert not list(graph.triples((NS["intro-to-sparql"], None, None)))
+
+
+# --- archive_note --------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_archive_note_sets_status_keeps_file_and_abox(corpus: Corpus) -> None:
+    """archive_note flips status; the file and ABox entry remain."""
+    mint_sparql_basics(corpus)
+
+    archived = notes.archive_note("sparql-basics", corpus)
+
+    assert archived.status == "archived"
+    note_path = corpus.notes_dir / "sparql-basics.md"
+    assert note_path.exists()
+    reloaded = load_markdown(note_path.read_text())
+    assert reloaded.status == "archived"
+
+    graph = abox.load(corpus.abox_path)
+    assert (NS["sparql-basics"], DCTERMS.title, None) in graph
+
+
+# --- delete_note ---------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_delete_note_with_no_inbound_references(corpus: Corpus) -> None:
+    """delete_note removes the file and ABox entry when nothing references it."""
+    mint_sparql_basics(corpus)
+
+    notes.delete_note("sparql-basics", corpus)
+
+    assert not (corpus.notes_dir / "sparql-basics.md").exists()
+    graph = abox.load(corpus.abox_path)
+    assert not list(graph.triples((NS["sparql-basics"], None, None)))
+
+
+@pytest.mark.unit
+def test_delete_note_blocked_by_inbound_references(corpus: Corpus) -> None:
+    """delete_note is rejected, naming the referencing note, unless confirmed."""
+    mint_sparql_basics(corpus)
+    mint_intro_to_sparql(corpus)
+    notes.update_note("intro-to-sparql", corpus, add_related=["sparql-basics"])
+
+    with pytest.raises(NotesError) as exc_info:
+        notes.delete_note("sparql-basics", corpus)
+    assert exc_info.value.rule == Rule.DELETE_BLOCKED_BY_REFERENCES
+    assert "intro-to-sparql" in exc_info.value.details["referencing_note_ids"]
+    assert (corpus.notes_dir / "sparql-basics.md").exists()
+
+
+@pytest.mark.unit
+def test_delete_note_confirmed_despite_inbound_references(
+    corpus: Corpus,
+) -> None:
+    """A confirmed delete removes the note even with inbound references."""
+    mint_sparql_basics(corpus)
+    mint_intro_to_sparql(corpus)
+    notes.update_note("intro-to-sparql", corpus, add_related=["sparql-basics"])
+
+    notes.delete_note("sparql-basics", corpus, confirm=True)
+
+    assert not (corpus.notes_dir / "sparql-basics.md").exists()
+    graph = abox.load(corpus.abox_path)
+    assert not list(graph.triples((NS["sparql-basics"], None, None)))
