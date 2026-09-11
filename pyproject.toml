@@ -11,8 +11,12 @@ requires-python = ">=3.12"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[project.scripts]
+mcp-local-notes = "mcp_local_notes.cli.main:app"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+bdd_features_base_dir = "features"
 markers = [
     "unit: fast tests with no external dependencies",
     "integration: tests requiring credentials or external fixtures",

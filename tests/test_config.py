@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from mcp_local_notes.core.config import get_notes_dir
+from mcp_local_notes.core.config import (
+    get_abox_path,
+    get_notes_dir,
+    get_tbox_path,
+)
 
 
 @pytest.mark.unit
@@ -19,3 +23,13 @@ def test_respects_notes_dir_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
     """NOTES_DIR, when set, overrides the default."""
     monkeypatch.setenv("NOTES_DIR", "/tmp/my-notes")
     assert get_notes_dir() == Path("/tmp/my-notes")
+
+
+@pytest.mark.unit
+def test_tbox_and_abox_paths_live_under_notes_dir(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """tbox.ttl/abox.ttl travel with the notes directory, not the repo root."""
+    monkeypatch.setenv("NOTES_DIR", "/tmp/my-notes")
+    assert get_tbox_path() == Path("/tmp/my-notes/tbox.ttl")
+    assert get_abox_path() == Path("/tmp/my-notes/abox.ttl")
