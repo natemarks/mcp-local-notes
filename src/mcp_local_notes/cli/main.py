@@ -9,8 +9,8 @@ from typing import Any, Callable, TypeVar
 
 import typer
 
-from mcp_local_notes.core import vocabulary
-from mcp_local_notes.core.config import get_tbox_path
+from mcp_local_notes.core import notes, vocabulary
+from mcp_local_notes.core.config import get_corpus, get_tbox_path
 from mcp_local_notes.core.errors import NotesError
 from mcp_local_notes.ontology.tbox import ROOT_TYPE
 
@@ -53,6 +53,27 @@ def add_class_command(
     """Add a new note type to the ontology."""
     vocabulary.add_class(name, get_tbox_path(), subclass_of=subclass_of)
     typer.echo(f"added type: {name}")
+
+
+@app.command("new-note")
+@handle_notes_errors
+def new_note_command(
+    title: str,
+    tags: list[str] = typer.Option([], "--tag"),
+    note_type: str = typer.Option(..., "--type"),
+    alias: list[str] = typer.Option([], "--alias"),
+    approve_topic: list[str] = typer.Option([], "--approve-topic"),
+) -> None:
+    """Create a new note."""
+    note = notes.new_note(
+        title=title,
+        tags=tags,
+        note_type=note_type,
+        corpus=get_corpus(),
+        aliases=alias,
+        approve_topics=approve_topic,
+    )
+    typer.echo(f"created note: {note.id}")
 
 
 @app.command("list-topics")
