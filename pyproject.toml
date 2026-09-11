@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-local-notes"
+version = "0.1.0"
+description = "Local markdown notes with a synchronized Turtle (TBox/ABox) ontology, exposed as a CLI and a local MCP server."
+requires-python = ">=3.12"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: fast tests with no external dependencies",
+    "integration: tests requiring credentials or external fixtures",
+]

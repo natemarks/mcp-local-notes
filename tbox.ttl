@@ -1,0 +1,14 @@
+@prefix : <https://notes.natenite.net/ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+# Note type hierarchy (owl:Class / rdfs:subClassOf). Root only for now;
+# additional types are added via add_class.
+:Note a owl:Class .
+
+# Controlled topic vocabulary (skos:ConceptScheme / skos:Concept). Empty for
+# now; topics are added via add_topic.
+:topics a skos:ConceptScheme .
