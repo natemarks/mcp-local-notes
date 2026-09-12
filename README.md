@@ -81,7 +81,59 @@ matching host/port in the URL above in either client.
 
 `new_note`, `update_note`, `add_topic`, `add_class`, `sync_note`,
 `rebuild_abox`, `validate`, `list_topics`, `list_types`, `archive_note`,
-`delete_note`.
+`delete_note`, `find_notes_by_topic`.
+
+## Example prompts
+
+### Creating documents with the Divio documentation types
+
+The [Divio documentation system](https://docs.divio.com/documentation-system/introduction/)
+identifies four document purposes -- tutorial, how-to, reference,
+explanation -- that should stay distinct rather than blended together.
+They map directly onto this project's single-valued `type` field: add
+each once as a note type (`add_class("Tutorial")`, `add_class("How-to")`,
+`add_class("Reference")`, `add_class("Explanation")`), then classify every
+new note as exactly one of them. Examples in the domain of beginner
+lacrosse coaching:
+
+**Tutorial** (learning-oriented, hand-holds a first-time coach)
+> "Create a note titled 'Running Your First Beginner Practice', type
+> `Tutorial`, tagged `lacrosse-coaching` (approve the topic), covering the
+> practice in order: cradling warm-up, wall ball pairs, then a ground-ball
+> scramble."
+
+**How-to** (goal-oriented, solves one specific problem)
+> "Create a note titled 'How to Run a Ground Ball Drill', type `How-to`,
+> tagged `lacrosse-coaching`, with the steps for a two-line
+> grounder-and-scoop drill and a common coaching cue for body position."
+
+**Reference** (dry, lookup-only)
+> "Create a note titled 'Youth Lacrosse Positions and Field Terminology',
+> type `Reference`, tagged `lacrosse-coaching`, listing attack/midfield/
+> defense/goalie roles and basic field zones."
+
+**Explanation** (understanding-oriented, the "why" behind a choice)
+> "Create a note titled 'Why Wall Ball Is the Foundation of Stick Skills',
+> type `Explanation`, tagged `lacrosse-coaching`, discussing why
+> repetition against a wall builds the muscle memory later drills depend
+> on."
+
+### Searching for notes by topic
+
+First list what topics exist, then search within one:
+
+> "What topics are in my local-ontology vocabulary?"
+
+This calls `list_topics`, returning every topic currently declared in
+`tbox.ttl` (e.g. `lacrosse-coaching`, from the notes created above).
+
+> "Show me every note tagged `lacrosse-coaching`."
+
+This calls `find_notes_by_topic`, returning the four notes created above
+(one per Divio type). An unknown topic name is rejected with a structured
+`UNKNOWN_TOPIC` error rather than silently returning nothing, since that
+usually means a typo -- run the `list_topics` prompt above first if
+you're not sure of the exact name.
 
 ## Local development (no Docker)
 

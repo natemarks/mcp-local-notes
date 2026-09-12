@@ -24,6 +24,7 @@ EXPECTED_TOOLS = {
     "list_types",
     "archive_note",
     "delete_note",
+    "find_notes_by_topic",
 }
 
 
@@ -89,6 +90,41 @@ def test_validate_tool_matches_core_validate_shape(_notes_dir: Path) -> None:
     result = _call("validate", {})
     assert result.is_error is False
     assert _success_payload(result) == {"ok": True, "issues": []}
+
+
+@pytest.mark.unit
+def test_find_notes_by_topic_tool_returns_matching_notes(
+    _notes_dir: Path,
+) -> None:
+    """The tool returns every note currently tagged with the topic."""
+    _call(
+        "new_note",
+        {
+            "title": "SPARQL basics",
+            "tags": ["knowledge-graphs"],
+            "note_type": "Concept",
+        },
+    )
+
+    result = _call("find_notes_by_topic", {"topic": "knowledge-graphs"})
+
+    assert result.is_error is False
+    # A list-returning tool's structured_content wraps the list under
+    # "result" (unlike a dict-returning tool's, which mirrors it 1:1) --
+    # see _success_payload's docstring for the dict-shaped equivalent.
+    payload = result.structured_content["result"]
+    assert [note["id"] for note in payload] == ["sparql-basics"]
+
+
+@pytest.mark.unit
+def test_find_notes_by_topic_tool_rejects_unknown_topic(
+    _notes_dir: Path,
+) -> None:
+    """An unknown topic surfaces as a structured UNKNOWN_TOPIC error."""
+    result = _call("find_notes_by_topic", {"topic": "no-such-topic"})
+
+    assert result.is_error is True
+    assert result.structured_content["rule"] == "UNKNOWN_TOPIC"
 
 
 @pytest.mark.unit

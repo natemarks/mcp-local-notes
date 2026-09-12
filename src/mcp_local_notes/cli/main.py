@@ -159,6 +159,24 @@ def validate_command(
     raise typer.Exit(code=0 if report["ok"] else 1)
 
 
+@app.command("find-notes-by-topic")
+@handle_notes_errors
+def find_notes_by_topic_command(
+    topic: str,
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    """List every note currently tagged with the given topic."""
+    matches = notes.find_notes_by_topic(topic, get_corpus())
+
+    if json_output:
+        typer.echo(json.dumps([note.to_frontmatter() for note in matches]))
+    elif not matches:
+        typer.echo("no notes found")
+    else:
+        for note in matches:
+            typer.echo(f"{note.id}: {note.title}")
+
+
 @app.command("list-topics")
 def list_topics_command() -> None:
     """List the current controlled topic vocabulary."""

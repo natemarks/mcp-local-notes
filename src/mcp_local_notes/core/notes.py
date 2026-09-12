@@ -337,3 +337,25 @@ def delete_note(note_id: str, corpus: Corpus, confirm: bool = False) -> None:
     graph = abox.load(corpus.abox_path)
     abox.remove_note(graph, note_id)
     abox.save(graph, corpus.abox_path)
+
+
+def find_notes_by_topic(topic: str, corpus: Corpus) -> list[Note]:
+    """Every note currently tagged with the given topic.
+
+    Rejects a topic that isn't in the controlled vocabulary (likely a
+    typo) rather than silently returning an empty list; a known topic
+    with no matching notes yet returns an empty list, not an error.
+    """
+    graph = tbox.load(corpus.tbox_path)
+    if not tbox.topic_exists(graph, topic):
+        raise NotesError(
+            Rule.UNKNOWN_TOPIC,
+            f"unknown topic: {topic!r} is not present in the topic vocabulary",
+            {"topic": topic},
+        )
+
+    return [
+        note
+        for note in _scan_existing_notes(corpus.notes_dir)
+        if topic in note.tags
+    ]

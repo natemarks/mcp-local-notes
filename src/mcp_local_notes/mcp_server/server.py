@@ -176,6 +176,14 @@ def delete_note(note_id: str, confirm: bool = False) -> dict:
     return {"deleted": note_id}
 
 
+@mcp.tool()
+@handle_notes_errors
+def find_notes_by_topic(topic: str) -> list[dict]:
+    """List every note currently tagged with the given topic."""
+    matches = notes.find_notes_by_topic(topic, get_corpus())
+    return [note.to_frontmatter() for note in matches]
+
+
 def main() -> None:
     """Run the server over Streamable HTTP at the SDK's own defaults
     (127.0.0.1:8000/mcp), host/port overridable via MCP_HOST/MCP_PORT (the

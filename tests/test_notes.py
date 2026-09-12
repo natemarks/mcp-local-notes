@@ -368,3 +368,44 @@ def test_delete_note_confirmed_despite_inbound_references(
     assert not (corpus.notes_dir / "sparql-basics.md").exists()
     graph = abox.load(corpus.abox_path)
     assert not list(graph.triples((NS["sparql-basics"], None, None)))
+
+
+# --- find_notes_by_topic --------------------------------------------------
+
+
+@pytest.mark.unit
+def test_find_notes_by_topic_returns_matching_notes(corpus: Corpus) -> None:
+    """Only notes tagged with the given topic are returned."""
+    mint_sparql_basics(corpus)
+    vocabulary.add_topic("other-topic", corpus.tbox_path)
+    notes.new_note(
+        title="Unrelated note",
+        tags=["other-topic"],
+        note_type="Concept",
+        corpus=corpus,
+    )
+
+    matches = notes.find_notes_by_topic("knowledge-graphs", corpus)
+
+    assert [note.id for note in matches] == ["sparql-basics"]
+
+
+@pytest.mark.unit
+def test_find_notes_by_topic_returns_empty_list_when_unused(
+    corpus: Corpus,
+) -> None:
+    """A known topic with no matching notes returns an empty list, not an
+    error -- distinct from an unknown topic, which is rejected."""
+    vocabulary.add_topic("unused-topic", corpus.tbox_path)
+
+    assert notes.find_notes_by_topic("unused-topic", corpus) == []
+
+
+@pytest.mark.unit
+def test_find_notes_by_topic_rejects_unknown_topic(corpus: Corpus) -> None:
+    """A topic not in the vocabulary is rejected, not silently empty --
+    the caller likely mistyped it."""
+    with pytest.raises(NotesError) as exc_info:
+        notes.find_notes_by_topic("no-such-topic", corpus)
+    assert exc_info.value.rule == Rule.UNKNOWN_TOPIC
+    assert exc_info.value.details["topic"] == "no-such-topic"
