@@ -1,11 +1,17 @@
 # mcp-local-notes
 
-Local markdown notes with a synchronized Turtle (TBox/ABox) ontology,
-exposed as a CLI and a local MCP server. Every operation runs entirely
-against local files, with no network calls beyond the MCP server itself
-listening on localhost.
+Manages a corpus of markdown notes whose metadata (id, title, tags, type,
+relationships to other notes) is kept in sync with a Turtle/RDF ontology
+(a TBox of controlled vocabulary and an ABox of per-note facts), instead
+of hand-editing both and letting them drift. The same operations --
+create a note, edit one, grow the vocabulary, validate the whole corpus,
+archive/delete a note -- are available two ways from one shared
+implementation: a Typer CLI for scripting/CI, and a local MCP server so
+an AI assistant can call them as typed tools instead of guessing at file
+edits. Every operation runs entirely against local files, with no
+network calls beyond the MCP server itself listening on localhost.
 
-## Quickstart (Docker, no local Python required)
+## Deploy (Docker, no local Python required)
 
 ```sh
 git clone https://github.com/natemarks/mcp-local-notes.git
@@ -33,11 +39,17 @@ Configuration (env vars, all optional):
 | `MCP_PORT` | `8000` | Host-side port the server is published on |
 | `MCP_BIND_HOST` | `127.0.0.1` | Host-side address the port is published on -- loopback-only by default, so a fresh `make start` never exposes your notes to your local network. Set to `0.0.0.0` only if you deliberately want LAN access (e.g. from another of your own devices). |
 
-## Registering with an MCP client
+## Use it from Claude Desktop
 
-Register the server under the `local-ontology` key so its tools appear as
-`mcp__local-ontology__<tool>` (e.g. `mcp__local-ontology__new_note`). For a
-client that takes a Streamable HTTP URL directly:
+Once the server is running (`make start`), add it as a custom connector:
+
+1. Settings → Connectors → Add custom connector
+2. Name: `local-ontology`
+3. URL: `http://127.0.0.1:8000/mcp`
+
+Older Desktop versions that read `claude_desktop_config.json` directly
+(macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`;
+Windows: `%APPDATA%\Claude\claude_desktop_config.json`) can instead add:
 
 ```json
 {
@@ -49,8 +61,21 @@ client that takes a Streamable HTTP URL directly:
 }
 ```
 
+then restart Claude Desktop. Either way, its tools appear grouped under
+`local-ontology`, e.g. `mcp__local-ontology__new_note`.
+
+## Use it from Claude Code
+
+```sh
+claude mcp add --transport http local-ontology http://127.0.0.1:8000/mcp
+```
+
+Add `--scope project` to scope the registration to this repo instead of
+your user config. Verify with `claude mcp list`; tools then appear the
+same way, as `mcp__local-ontology__<tool>`.
+
 If your `MCP_BIND_HOST`/`MCP_PORT` differ from the defaults, use the
-matching host/port in the URL above.
+matching host/port in the URL above in either client.
 
 ## Registered tools
 
