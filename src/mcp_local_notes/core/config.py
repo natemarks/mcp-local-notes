@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 DEFAULT_NOTES_DIR = "./notes"
+DEFAULT_MCP_PORT = 8000
 
 
 @dataclass
@@ -29,6 +30,12 @@ def get_tbox_path() -> Path:
 def get_abox_path() -> Path:
     """abox.ttl lives inside the notes directory, alongside the notes."""
     return get_notes_dir() / "abox.ttl"
+
+
+def get_mcp_port() -> int:
+    """The MCP server's listen port: MCP_PORT if set, else 8000 (this
+    project's own default, chosen to match the mcp SDK's current default)."""
+    return int(os.environ.get("MCP_PORT", DEFAULT_MCP_PORT))
 
 
 def get_corpus() -> Corpus:
