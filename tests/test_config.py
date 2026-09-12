@@ -6,6 +6,7 @@ import pytest
 
 from mcp_local_notes.core.config import (
     get_abox_path,
+    get_mcp_host,
     get_mcp_port,
     get_notes_dir,
     get_tbox_path,
@@ -48,3 +49,21 @@ def test_mcp_port_respects_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
     """MCP_PORT, when set, overrides the default."""
     monkeypatch.setenv("MCP_PORT", "9000")
     assert get_mcp_port() == 9000
+
+
+@pytest.mark.unit
+def test_mcp_host_defaults_to_loopback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With MCP_HOST unset, the server binds loopback-only -- the safe
+    default for a bare (non-Dockerized) run."""
+    monkeypatch.delenv("MCP_HOST", raising=False)
+    assert get_mcp_host() == "127.0.0.1"
+
+
+@pytest.mark.unit
+def test_mcp_host_respects_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
+    """MCP_HOST, when set, overrides the default -- the Docker image sets
+    this to 0.0.0.0 so the container's own port-forwarding can reach it."""
+    monkeypatch.setenv("MCP_HOST", "0.0.0.0")
+    assert get_mcp_host() == "0.0.0.0"

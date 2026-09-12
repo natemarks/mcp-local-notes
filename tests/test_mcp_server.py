@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 from mcp.types import CallToolResult
 
-from mcp_local_notes.core import vocabulary
 from mcp_local_notes.mcp_server.server import main, mcp
 
 EXPECTED_TOOLS = {
@@ -72,7 +71,9 @@ def test_new_note_tool_creates_a_file(_notes_dir: Path) -> None:
 
 
 @pytest.mark.unit
-def test_add_topic_duplicate_returns_structured_error(_notes_dir: Path) -> None:
+def test_add_topic_duplicate_returns_structured_error(
+    _notes_dir: Path,
+) -> None:
     """A NotesError surfaces as a structured {rule, message, details} result."""
     # _notes_dir already pre-seeds "knowledge-graphs" (see conftest._cli_notes_dir).
     result = _call("add_topic", {"name": "knowledge-graphs"})
@@ -97,6 +98,7 @@ def test_main_runs_streamable_http_with_configured_port(
     """main() wires the server to Streamable HTTP at the configured port,
     the one place transport/port selection actually happens."""
     monkeypatch.setenv("MCP_PORT", "9123")
+    monkeypatch.setenv("MCP_HOST", "0.0.0.0")
     calls = {}
 
     def _fake_run(**kwargs: object) -> None:
@@ -104,4 +106,8 @@ def test_main_runs_streamable_http_with_configured_port(
 
     monkeypatch.setattr(mcp, "run", _fake_run)
     main()
-    assert calls == {"transport": "streamable-http", "port": 9123}
+    assert calls == {
+        "transport": "streamable-http",
+        "host": "0.0.0.0",
+        "port": 9123,
+    }

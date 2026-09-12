@@ -1,6 +1,11 @@
 .DEFAULT_GOAL := help
 SHELL := $(shell which bash)
 
+IMAGE := mcp-local-notes
+MCP_BIND_HOST ?= 127.0.0.1
+MCP_PORT ?= 8000
+NOTES_DIR ?= ./notes
+
 help: ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
@@ -49,4 +54,21 @@ clean-cache: ## clean python and pytest cache data
 	@find . -type d -name __pycache__ -not -path "./.venv/*" -exec rm -rf {} + 2>/dev/null || true
 	@rm -rf .pytest_cache
 
-.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv
+build: ## build the docker image
+	docker build -t $(IMAGE) .
+
+start: build ## run the MCP server as a background container
+	mkdir -p $(NOTES_DIR)
+	docker run -d --name $(IMAGE) \
+		-v $(abspath $(NOTES_DIR)):/notes \
+		-p $(MCP_BIND_HOST):$(MCP_PORT):8000 \
+		$(IMAGE)
+
+stop: ## stop and remove the running container
+	docker stop $(IMAGE)
+	docker rm $(IMAGE)
+
+logs: ## follow the running container's logs
+	docker logs -f $(IMAGE)
+
+.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv build start stop logs

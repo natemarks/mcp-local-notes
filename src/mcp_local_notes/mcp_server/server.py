@@ -15,7 +15,12 @@ from mcp.types import CallToolResult, TextContent
 from mcp_local_notes.core import notes
 from mcp_local_notes.core import validate as core_validate
 from mcp_local_notes.core import vocabulary
-from mcp_local_notes.core.config import get_corpus, get_mcp_port, get_tbox_path
+from mcp_local_notes.core.config import (
+    get_corpus,
+    get_mcp_host,
+    get_mcp_port,
+    get_tbox_path,
+)
 from mcp_local_notes.core.errors import NotesError
 from mcp_local_notes.ontology.tbox import ROOT_TYPE
 
@@ -59,6 +64,12 @@ def new_note(
     approve_topics: list[str] | None = None,
 ) -> dict:
     """Create a new note."""
+    # Identical to cli.main's new_note_command body: the spec requires
+    # cli/ and mcp_server/ to be peer adapters over the same core/ with
+    # zero divergent business logic, so this passthrough has nothing to
+    # extract into a shared helper without adding an abstraction neither
+    # adapter otherwise needs.
+    # pylint: disable=duplicate-code
     note = notes.new_note(
         title=title,
         tags=tags,
@@ -67,12 +78,13 @@ def new_note(
         aliases=aliases or [],
         approve_topics=approve_topics or [],
     )
+    # pylint: enable=duplicate-code
     return note.to_frontmatter()
 
 
 @mcp.tool()
 @handle_notes_errors
-def update_note(  # pylint: disable=too-many-arguments
+def update_note(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     note_id: str,
     title: str | None = None,
     add_tags: list[str] | None = None,
@@ -166,8 +178,11 @@ def delete_note(note_id: str, confirm: bool = False) -> dict:
 
 def main() -> None:
     """Run the server over Streamable HTTP at the SDK's own defaults
-    (127.0.0.1:8000/mcp), port overridable via MCP_PORT."""
-    mcp.run(transport="streamable-http", port=get_mcp_port())
+    (127.0.0.1:8000/mcp), host/port overridable via MCP_HOST/MCP_PORT (the
+    Docker image sets MCP_HOST=0.0.0.0; a bare local run keeps loopback)."""
+    mcp.run(
+        transport="streamable-http", host=get_mcp_host(), port=get_mcp_port()
+    )
 
 
 if __name__ == "__main__":

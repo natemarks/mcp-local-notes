@@ -14,10 +14,15 @@ from typing import Any
 
 import pytest
 from mcp.server import MCPServer
+from mcp.types import CallToolResult
 from pytest_bdd import given, parsers, scenarios, then, when
 from typer.testing import CliRunner
 
-from conftest import EMPTY_ABOX, NEW_SPARQL_BASICS_CLI_ARGS, seed_tbox_with_defaults
+from conftest import (
+    EMPTY_ABOX,
+    NEW_SPARQL_BASICS_CLI_ARGS,
+    seed_tbox_with_defaults,
+)
 from mcp_local_notes.cli.main import app as cli_app
 from mcp_local_notes.core.config import Corpus
 from mcp_local_notes.mcp_server.server import mcp as mcp_server
@@ -65,6 +70,7 @@ def given_connected() -> None:
 
 @when("an assistant lists available tools")
 def when_lists_tools(outcome: dict[str, Any]) -> None:
+    """Record every tool name the server currently registers."""
     tools = asyncio.run(mcp_server.list_tools())
     outcome["tool_names"] = {tool.name for tool in tools}
 
@@ -81,6 +87,7 @@ def then_named_with_prefix(prefix: str, outcome: dict[str, Any]) -> None:
 
 @then(parsers.parse("that group should include at least: {names}"))
 def then_group_includes(names: str, outcome: dict[str, Any]) -> None:
+    """Every named tool is among the ones the server registered."""
     expected = {name.strip() for name in names.split(",")}
     assert expected <= outcome["tool_names"]
 
@@ -131,6 +138,7 @@ def when_created_both_ways(
             },
         )
     )
+    assert isinstance(mcp_result, CallToolResult)
     assert mcp_result.is_error is False
 
     outcome["cli_dir"] = cli_dir
@@ -139,6 +147,7 @@ def when_created_both_ways(
 
 @then("both should produce an identical note file")
 def then_identical_note_file(outcome: dict[str, Any]) -> None:
+    """The CLI-created and MCP-created note files are byte-identical."""
     cli_text = (outcome["cli_dir"] / "sparql-basics.md").read_text()
     mcp_text = (outcome["mcp_dir"] / "sparql-basics.md").read_text()
     assert cli_text == mcp_text
@@ -146,6 +155,7 @@ def then_identical_note_file(outcome: dict[str, Any]) -> None:
 
 @then("both should produce an identical ABox block")
 def then_identical_abox_block(outcome: dict[str, Any]) -> None:
+    """The CLI-created and MCP-created ABox entries hold the same triples."""
     cli_graph = abox.load(outcome["cli_dir"] / "abox.ttl")
     mcp_graph = abox.load(outcome["mcp_dir"] / "abox.ttl")
     subject = tbox.NS["sparql-basics"]
@@ -173,19 +183,19 @@ def when_any_tool_invoked(
 
     real_socket = socket.socket
 
-    def _guarded_socket(
-        family: int = socket.AF_INET, *args: Any, **kwargs: Any
-    ) -> socket.socket:
+    def _guarded_socket(*args: Any, **kwargs: Any) -> socket.socket:
+        family = args[0] if args else kwargs.get("family", socket.AF_INET)
         if family in (socket.AF_INET, socket.AF_INET6):
             raise AssertionError(
                 "network socket attempted during tool invocation"
             )
-        return real_socket(family, *args, **kwargs)
+        return real_socket(*args, **kwargs)
 
     monkeypatch.setattr(socket, "socket", _guarded_socket)
 
     outcome["files_before"] = sorted(
-        str(p.relative_to(corpus.notes_dir)) for p in corpus.notes_dir.rglob("*")
+        str(p.relative_to(corpus.notes_dir))
+        for p in corpus.notes_dir.rglob("*")
     )
     outcome["result"] = asyncio.run(mcp_server.call_tool("list_topics", {}))
 
@@ -197,8 +207,10 @@ def when_any_tool_invoked(
 def then_reads_writes_only_notes_dir(
     corpus: Corpus, outcome: dict[str, Any]
 ) -> None:
+    """The notes directory's file listing is unchanged by the read-only call."""
     files_after = sorted(
-        str(p.relative_to(corpus.notes_dir)) for p in corpus.notes_dir.rglob("*")
+        str(p.relative_to(corpus.notes_dir))
+        for p in corpus.notes_dir.rglob("*")
     )
     assert files_after == outcome["files_before"]
 
@@ -216,10 +228,12 @@ def then_no_network_calls(outcome: dict[str, Any]) -> None:
 
 @given("a request that would violate a uniqueness or vocabulary rule")
 def given_violating_request(corpus: Corpus, outcome: dict[str, Any]) -> None:
-    """"knowledge-graphs" is already seeded by the tbox_path fixture above,
+    """ "knowledge-graphs" is already seeded by the tbox_path fixture above,
     so re-adding it via add_topic is a ready-made TOPIC_ALREADY_EXISTS case."""
     outcome["tbox_before"] = corpus.tbox_path.read_text()
-    outcome["notes_before"] = sorted(p.name for p in corpus.notes_dir.glob("*.md"))
+    outcome["notes_before"] = sorted(
+        p.name for p in corpus.notes_dir.glob("*.md")
+    )
 
 
 @when(parsers.parse('the corresponding "{name}" tool is invoked'))
@@ -229,6 +243,7 @@ def when_violating_tool_invoked(
     outcome: dict[str, Any],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Invoke add_topic with a name already in the vocabulary."""
     assert mcp_server.name == name
     monkeypatch.setenv("NOTES_DIR", str(corpus.notes_dir))
     outcome["result"] = asyncio.run(
@@ -238,6 +253,7 @@ def when_violating_tool_invoked(
 
 @then("it should return a structured error naming the specific rule violated")
 def then_structured_error(outcome: dict[str, Any]) -> None:
+    """The result is a structured TOPIC_ALREADY_EXISTS error."""
     result = outcome["result"]
     assert result.is_error is True
     assert result.structured_content["rule"] == "TOPIC_ALREADY_EXISTS"
@@ -246,6 +262,7 @@ def then_structured_error(outcome: dict[str, Any]) -> None:
 
 @then("it should make no partial writes to any note file or ontology file")
 def then_no_partial_writes(corpus: Corpus, outcome: dict[str, Any]) -> None:
+    """Neither tbox.ttl nor the notes directory's file listing changed."""
     assert corpus.tbox_path.read_text() == outcome["tbox_before"]
     assert (
         sorted(p.name for p in corpus.notes_dir.glob("*.md"))
@@ -257,9 +274,7 @@ def then_no_partial_writes(corpus: Corpus, outcome: dict[str, Any]) -> None:
 
 
 @given(
-    parsers.parse(
-        'the "{name}" MCP server is not running or not registered'
-    )
+    parsers.parse('the "{name}" MCP server is not running or not registered')
 )
 def given_server_not_registered(name: str, outcome: dict[str, Any]) -> None:
     """Model "not registered" with a genuinely separate, freshly-built
@@ -272,6 +287,7 @@ def given_server_not_registered(name: str, outcome: dict[str, Any]) -> None:
 
 @when(parsers.parse('an assistant looks for "{name}" tools'))
 def when_assistant_looks_for_tools(name: str, outcome: dict[str, Any]) -> None:
+    """List whatever tools the unregistered stand-in server has (none)."""
     assert outcome["unregistered_server_name"] == name
     tools = asyncio.run(outcome["unregistered_server"].list_tools())
     outcome["tools"] = [tool.name for tool in tools]
@@ -279,6 +295,7 @@ def when_assistant_looks_for_tools(name: str, outcome: dict[str, Any]) -> None:
 
 @then("it should find none")
 def then_finds_none(outcome: dict[str, Any]) -> None:
+    """No tools were found on the unregistered stand-in server."""
     assert outcome["tools"] == []
 
 
@@ -307,6 +324,7 @@ def when_command_run_directly(
     outcome: dict[str, Any],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Run `command --json` via the CLI, recording its parsed report."""
     monkeypatch.setenv("NOTES_DIR", str(corpus.notes_dir))
     result = _CLI_RUNNER.invoke(cli_app, [command, "--json"])
     assert result.exit_code == 0
@@ -317,6 +335,7 @@ def when_command_run_directly(
 def then_behaves_identically_to_mcp(
     corpus: Corpus, outcome: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """The validate MCP tool, against the same corpus, reports the same thing."""
     monkeypatch.setenv("NOTES_DIR", str(corpus.notes_dir))
     mcp_result = asyncio.run(mcp_server.call_tool("validate", {}))
     mcp_report = json.loads(mcp_result.content[0].text)  # type: ignore[union-attr]

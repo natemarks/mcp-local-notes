@@ -13,6 +13,7 @@ where = ["src"]
 
 [project.scripts]
 mcp-local-notes = "mcp_local_notes.cli.main:app"
+mcp-local-notes-server = "mcp_local_notes.mcp_server.server:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

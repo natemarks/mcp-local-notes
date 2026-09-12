@@ -6,6 +6,7 @@ from pathlib import Path
 
 DEFAULT_NOTES_DIR = "./notes"
 DEFAULT_MCP_PORT = 8000
+DEFAULT_MCP_HOST = "127.0.0.1"
 
 
 @dataclass
@@ -36,6 +37,13 @@ def get_mcp_port() -> int:
     """The MCP server's listen port: MCP_PORT if set, else 8000 (this
     project's own default, chosen to match the mcp SDK's current default)."""
     return int(os.environ.get("MCP_PORT", DEFAULT_MCP_PORT))
+
+
+def get_mcp_host() -> str:
+    """The MCP server's bind address: MCP_HOST if set, else loopback-only
+    (safe for a bare local run; see mcp_server.server.main for why a
+    containerized run needs a different value)."""
+    return os.environ.get("MCP_HOST", DEFAULT_MCP_HOST)
 
 
 def get_corpus() -> Corpus:
