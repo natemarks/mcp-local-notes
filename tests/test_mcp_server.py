@@ -129,10 +129,11 @@ def test_find_notes_by_topic_tool_rejects_unknown_topic(
 
 @pytest.mark.unit
 def test_main_runs_streamable_http_with_configured_port(
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """main() wires the server to Streamable HTTP at the configured port,
     the one place transport/port selection actually happens."""
+    monkeypatch.chdir(tmp_path)  # no .env.json here
     monkeypatch.setenv("MCP_PORT", "9123")
     monkeypatch.setenv("MCP_HOST", "0.0.0.0")
     calls = {}
@@ -147,3 +148,64 @@ def test_main_runs_streamable_http_with_configured_port(
         "host": "0.0.0.0",
         "port": 9123,
     }
+
+
+@pytest.mark.unit
+def test_main_logs_no_env_file_when_absent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture,
+) -> None:
+    """With no .env.json in the working directory, main() says so, and
+    still reports the resolved config values."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(mcp, "run", lambda **_kwargs: None)
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "no .env.json found" in out
+    assert "NOTES_DIR=" in out
+    assert "MCP_PORT=" in out
+    assert "MCP_HOST=" in out
+
+
+@pytest.mark.unit
+def test_main_logs_env_file_and_picks_up_its_values(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture,
+) -> None:
+    """A present .env.json is named in the log, and its values (when not
+    already set in the environment) actually drive the server config."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("NOTES_DIR", raising=False)
+    monkeypatch.delenv("MCP_PORT", raising=False)
+    (tmp_path / ".env.json").write_text(
+        '{"NOTES_DIR": "/from/env/json", "MCP_PORT": 9321}'
+    )
+    calls = {}
+    monkeypatch.setattr(mcp, "run", lambda **kwargs: calls.update(kwargs))
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "loaded config from .env.json" in out
+    assert "NOTES_DIR=/from/env/json" in out
+    assert calls["port"] == 9321
+
+
+@pytest.mark.unit
+def test_main_exits_cleanly_on_malformed_env_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A malformed .env.json fails loudly with a clear message (via
+    SystemExit's string form, which the interpreter prints to stderr
+    and turns into exit code 1) rather than an uncaught traceback."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env.json").write_text("{not valid json")
+
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert "invalid JSON in" in str(exc_info.value.code)

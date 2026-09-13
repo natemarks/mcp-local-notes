@@ -17,9 +17,7 @@ def test_find_notes_by_topic_lists_matching_notes(_notes_dir: Path) -> None:
     """A note tagged with the topic is listed by id and title."""
     runner.invoke(app, NEW_SPARQL_BASICS_CLI_ARGS)
 
-    result = runner.invoke(
-        app, ["find-notes-by-topic", "knowledge-graphs"]
-    )
+    result = runner.invoke(app, ["find-notes-by-topic", "knowledge-graphs"])
 
     assert result.exit_code == 0
     assert "sparql-basics: SPARQL basics" in result.stdout

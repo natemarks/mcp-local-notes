@@ -1,12 +1,15 @@
 """Environment-driven configuration shared by the CLI and MCP adapters."""
 
+import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import MutableMapping
 
 DEFAULT_NOTES_DIR = "./notes"
 DEFAULT_MCP_PORT = 8000
 DEFAULT_MCP_HOST = "127.0.0.1"
+DEFAULT_ENV_FILE = Path(".env.json")
 
 
 @dataclass
@@ -44,6 +47,34 @@ def get_mcp_host() -> str:
     (safe for a bare local run; see mcp_server.server.main for why a
     containerized run needs a different value)."""
     return os.environ.get("MCP_HOST", DEFAULT_MCP_HOST)
+
+
+def load_env_file(
+    path: Path = DEFAULT_ENV_FILE,
+    environ: MutableMapping[str, str] | None = None,
+) -> None:
+    """Fill in any var from a JSON env file that isn't already set --
+    an explicit shell export always wins over a persisted default.
+    No-ops if the file doesn't exist (e.g. inside Docker, where none is
+    shipped: the container gets its config from real env vars only)."""
+    if environ is None:
+        environ = os.environ
+    if not path.exists():
+        return
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValueError(f"invalid JSON in {path}: {error}") from error
+    for key, value in data.items():
+        environ.setdefault(key, str(value))
+
+
+def describe_env_source(path: Path = DEFAULT_ENV_FILE) -> str:
+    """One line describing where startup config came from, for the MCP
+    server to log at boot."""
+    if path.exists():
+        return f"loaded config from {path}"
+    return f"no {path} found; using the process environment and defaults"
 
 
 def get_corpus() -> Corpus:
