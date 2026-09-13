@@ -2,9 +2,24 @@
 SHELL := $(shell which bash)
 
 IMAGE := mcp-local-notes
-MCP_BIND_HOST ?= 127.0.0.1
-MCP_PORT ?= 8000
-NOTES_DIR ?= ./notes
+ENV_FILE := .env.json
+
+# Reads one key out of .env.json via python3 (no jq dependency, since
+# python3 is already required by this whole project), falling back to
+# $(2) if the file or the key is missing. `make start FOO=bar` on the
+# command line still overrides either source: a `?=` below never even
+# runs this shell-out when the variable is already set that way.
+#
+# Deliberately not a call into core.config.load_env_file: Make needs
+# these values before .venv/the package even exist (this IS what builds
+# them), so it can't import project code -- hence this small, separate
+# read of the same file, kept intentionally minimal (one dict.get with
+# a fallback) to limit how far the two can drift.
+env_json_get = python3 -c "import json, os; f = '$(ENV_FILE)'; d = json.load(open(f, encoding='utf-8')) if os.path.exists(f) else {}; print(d.get('$(1)', '$(2)'))"
+
+MCP_BIND_HOST ?= $(shell $(call env_json_get,MCP_BIND_HOST,127.0.0.1))
+MCP_PORT ?= $(shell $(call env_json_get,MCP_PORT,8000))
+NOTES_DIR ?= $(shell $(call env_json_get,NOTES_DIR,./notes))
 
 help: ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'

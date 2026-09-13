@@ -16,10 +16,13 @@ from mcp_local_notes.core import notes
 from mcp_local_notes.core import validate as core_validate
 from mcp_local_notes.core import vocabulary
 from mcp_local_notes.core.config import (
+    describe_env_source,
     get_corpus,
     get_mcp_host,
     get_mcp_port,
+    get_notes_dir,
     get_tbox_path,
+    load_env_file,
 )
 from mcp_local_notes.core.errors import NotesError
 from mcp_local_notes.ontology.tbox import ROOT_TYPE
@@ -187,7 +190,30 @@ def find_notes_by_topic(topic: str) -> list[dict]:
 def main() -> None:
     """Run the server over Streamable HTTP at the SDK's own defaults
     (127.0.0.1:8000/mcp), host/port overridable via MCP_HOST/MCP_PORT (the
-    Docker image sets MCP_HOST=0.0.0.0; a bare local run keeps loopback)."""
+    Docker image sets MCP_HOST=0.0.0.0; a bare local run keeps loopback).
+
+    Loads .env.json first (if present -- never shipped inside the Docker
+    image, so this is a no-op there) and logs where the startup config
+    came from and what it resolved to, before binding anything.
+
+    Both lines are explicitly flushed: stdout is fully block-buffered
+    (not line-buffered) when it isn't a TTY -- as under `docker logs` --
+    so an unflushed print() here could sit invisible in the buffer
+    indefinitely instead of appearing at startup as intended.
+
+    A malformed .env.json exits with a clear message rather than an
+    uncaught traceback, before anything binds.
+    """
+    try:
+        load_env_file()
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
+    print(describe_env_source(), flush=True)
+    print(
+        f"NOTES_DIR={get_notes_dir()} MCP_PORT={get_mcp_port()} "
+        f"MCP_HOST={get_mcp_host()}",
+        flush=True,
+    )
     mcp.run(
         transport="streamable-http", host=get_mcp_host(), port=get_mcp_port()
     )

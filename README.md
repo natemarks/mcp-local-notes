@@ -39,6 +39,42 @@ Configuration (env vars, all optional):
 | `MCP_PORT` | `8000` | Host-side port the server is published on |
 | `MCP_BIND_HOST` | `127.0.0.1` | Host-side address the port is published on -- loopback-only by default, so a fresh `make start` never exposes your notes to your local network. Set to `0.0.0.0` only if you deliberately want LAN access (e.g. from another of your own devices). |
 
+### Persisting config across runs (.env.json)
+
+Instead of exporting these every time, copy the committed example and
+edit it:
+
+```sh
+cp .env.example.json .env.json
+```
+
+`.env.json` is gitignored (your own machine's settings, not shared),
+while `.env.example.json` stays committed with the defaults above. It's
+read by:
+
+- `make build`/`make start` -- supplies `NOTES_DIR`/`MCP_PORT`/`MCP_BIND_HOST`
+  defaults for the Makefile itself.
+- The CLI and the bare `mcp-local-notes-server` -- read it directly for
+  `NOTES_DIR`/`MCP_PORT`/`MCP_HOST`.
+
+An already-exported shell env var always wins over `.env.json` (it only
+fills in what isn't already set), and a `make start NOTES_DIR=...`
+command-line argument wins over both. `.env.json` is never read inside
+the Docker container itself (it isn't shipped in the image) -- the MCP
+server logs which file it used and the resolved values at startup:
+
+```
+loaded config from .env.json
+NOTES_DIR=./notes MCP_PORT=8000 MCP_HOST=127.0.0.1
+```
+
+or, with no file present:
+
+```
+no .env.json found; using the process environment and defaults
+NOTES_DIR=./notes MCP_PORT=8000 MCP_HOST=127.0.0.1
+```
+
 ## Use it from Claude Desktop
 
 Once the server is running (`make start`), add it as a custom connector:

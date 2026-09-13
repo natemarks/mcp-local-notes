@@ -11,13 +11,35 @@ from typing import Any, Callable, TypeVar
 import typer
 
 from mcp_local_notes.core import notes, validate, vocabulary
-from mcp_local_notes.core.config import get_corpus, get_tbox_path
+from mcp_local_notes.core.config import (
+    get_corpus,
+    get_tbox_path,
+    load_env_file,
+)
 from mcp_local_notes.core.errors import NotesError
 from mcp_local_notes.ontology.tbox import ROOT_TYPE
 
 app = typer.Typer(
     help="local-ontology: manage markdown notes and their Turtle ontology."
 )
+
+
+@app.callback()
+def _load_config() -> None:
+    """Load .env.json (if present) before any command runs, filling in
+    only vars not already set in the environment.
+
+    Renders a malformed file the same way handle_notes_errors renders a
+    NotesError (message to stderr, exit 1) -- this isn't a NotesError
+    itself (it's a config-file problem, not a notes/vocabulary rule),
+    but every command depends on this callback running first, so it
+    needs the same non-traceback rendering the rest of the CLI has."""
+    try:
+        load_env_file()
+    except ValueError as error:
+        typer.echo(str(error), err=True)
+        raise typer.Exit(code=1) from error
+
 
 F = TypeVar("F", bound=Callable[..., Any])
 
