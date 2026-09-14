@@ -86,9 +86,26 @@ stop: ## stop and remove the running container
 logs: ## follow the running container's logs
 	docker logs -f $(IMAGE)
 
+demo: .venv ## run a throwaway demo notes corpus on MCP_PORT (see DEMO.md)
+	@demo_host=$$(source .venv/bin/activate && python3 -c "from mcp_local_notes.core.config import get_mcp_host; print(get_mcp_host())"); \
+	if (exec 3<>/dev/tcp/$$demo_host/$(MCP_PORT)) 2>/dev/null; then \
+		exec 3<&- 2>/dev/null; exec 3>&- 2>/dev/null; \
+		echo "Error: port $(MCP_PORT) is already in use -- stop it first (make stop, or kill whatever else is running) before running make demo"; \
+		exit 1; \
+	fi
+	demo_dir=$$(mktemp -d); \
+	cp "notes/tbox.ttl" "notes/abox.ttl" "$$demo_dir/"; \
+	echo "Demo notes directory: $$demo_dir"; \
+	echo "See DEMO.md for the prompts to run against it. Press Ctrl+C to stop."; \
+	trap 'echo ""; echo "Demo server stopped. The temp corpus is still at: $$demo_dir"; echo "Remove it with: rm -rf $$demo_dir"; exit 0' INT; \
+	source .venv/bin/activate && NOTES_DIR="$$demo_dir" mcp-local-notes-server; \
+	echo ""; \
+	echo "Demo server stopped. The temp corpus is still at: $$demo_dir"; \
+	echo "Remove it with: rm -rf $$demo_dir"
+
 deploy-skill: ## install/update the local-notes Claude skill in ~/.claude/skills
 	mkdir -p $(HOME)/.claude/skills/local-notes
 	cp .claude/skills/local-notes/SKILL.md $(HOME)/.claude/skills/local-notes/SKILL.md
 	@echo "Deployed local-notes skill to $(HOME)/.claude/skills/local-notes/SKILL.md"
 
-.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv build start stop logs deploy-skill
+.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv build start stop logs demo deploy-skill
