@@ -1,6 +1,6 @@
 ---
 name: local-notes
-description: Create, edit, and organize notes in this project's Turtle/RDF-backed notes corpus through its MCP tools (new_note, update_note, add_topic, add_class, sync_note, rebuild_abox, validate, list_topics, list_types, archive_note, delete_note, find_notes_by_topic). Use when the user wants to create a note, edit or retag an existing note, add a topic or note type, list the vocabulary, search notes by topic, recover the ontology after hand-edited notes, validate the corpus, or archive/delete a note.
+description: Create, edit, and organize notes in this project's Turtle/RDF-backed notes corpus through its MCP tools. Use when the user wants to create a note, edit or retag an existing note, add a topic or note type, list the vocabulary, search notes by topic, recover the ontology after hand-edited notes, validate the corpus, or archive/delete a note.
 ---
 
 # Local Notes
@@ -10,7 +10,7 @@ Every note is tagged from a controlled topic vocabulary and classified under a d
 ## The pattern every workflow follows
 
 1. **Look up the decision context before asking anything.** Call whatever read-only tool tells you what already exists: `list_topics` and `list_types` before creating or retagging a note, `find_notes_by_topic` before pointing a `related` field at another note. There is no `get_note` tool -- to see a note's current frontmatter before editing it, read `<NOTES_DIR>/<id>.md` directly, or use `find_notes_by_topic` if you already know one of its tags. Done when you can name, for every field you're about to ask about, what already exists to choose from.
-2. **Ask for each required field one at a time**, stating the existing options and your recommendation alongside the question -- never pose a field with no context behind it. Reusing an existing topic or type is the default recommendation; propose creating a new one only when nothing existing fits. Done when every required field has an explicit answer.
+2. **Ask for each required field one at a time**, stating the existing options and your recommendation alongside the question. Reusing an existing topic or type is the default recommendation; propose creating a new one only when nothing existing fits. Done when every required field has an explicit answer.
 3. **Ask for each optional field the same way**, skipping only a field the user's own request already answered. Done when every optional field has been asked about or explicitly skipped.
 4. **Call the tool.** A rejection carries a specific rule and details (`UNKNOWN_TOPIC`, `DELETE_BLOCKED_BY_REFERENCES`, etc.) -- read it, turn it back into a question per steps 2-3, rather than retrying blind or dropping information the user already gave you.
 
