@@ -29,9 +29,7 @@ def test_cli_picks_up_notes_dir_from_env_json(
     real_notes_dir.mkdir()
     shutil.copy(BOOTSTRAP_TBOX, real_notes_dir / "tbox.ttl")
     (real_notes_dir / "abox.ttl").write_text(EMPTY_ABOX)
-    (tmp_path / ".env.json").write_text(
-        f'{{"NOTES_DIR": "{real_notes_dir}"}}'
-    )
+    (tmp_path / ".env.json").write_text(f'{{"NOTES_DIR": "{real_notes_dir}"}}')
 
     result = runner.invoke(app, ["add-topic", "knowledge-graphs"])
 
