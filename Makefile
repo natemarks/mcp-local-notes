@@ -103,4 +103,9 @@ demo: .venv ## run a throwaway demo notes corpus on MCP_PORT (see DEMO.md)
 	echo "Demo server stopped. The temp corpus is still at: $$demo_dir"; \
 	echo "Remove it with: rm -rf $$demo_dir"
 
-.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv build start stop logs demo
+deploy-skill: ## install/update the local-notes Claude skill in ~/.claude/skills
+	mkdir -p $(HOME)/.claude/skills/local-notes
+	cp .claude/skills/local-notes/SKILL.md $(HOME)/.claude/skills/local-notes/SKILL.md
+	@echo "Deployed local-notes skill to $(HOME)/.claude/skills/local-notes/SKILL.md"
+
+.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv build start stop logs demo deploy-skill
