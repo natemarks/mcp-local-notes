@@ -4,7 +4,7 @@
 (no relation to this repo's own `notes/`) and runs the MCP server against
 it on the usual port. Every prompt below is meant to be pasted, as-is,
 into an AI assistant (Claude Desktop or Claude Code) that already has
-this project's server registered under the `local-ontology` key -- see
+this project's server registered under the `local-notes` key -- see
 the main [README](README.md#use-it-from-claude-desktop) if you haven't
 done that yet.
 
@@ -25,7 +25,7 @@ This:
    topics or types declared yet).
 3. Runs `mcp-local-notes-server` in the foreground, `NOTES_DIR` pointed
    at that temp directory. Because it's the same host/port your
-   `local-ontology` registration already points at, your assistant
+   `local-notes` registration already points at, your assistant
    starts talking to this empty demo corpus immediately -- nothing to
    re-register.
 
@@ -168,7 +168,7 @@ You should now have 14 notes: 7 tagged `lacrosse-coaching`, 4 tagged
 ## Phase 3: see what you built
 
 ```
-What topics are in my local-ontology vocabulary?
+What topics are in my local-notes vocabulary?
 ```
 
 ```
@@ -184,7 +184,7 @@ Show me every note tagged linux-backup-recovery.
 ```
 
 ```
-Validate my local-ontology notes corpus.
+Validate my local-notes corpus.
 ```
 
 The topic counts should come back as 4 / 7 / 3, and validation should

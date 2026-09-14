@@ -80,7 +80,7 @@ NOTES_DIR=./notes MCP_PORT=8000 MCP_HOST=127.0.0.1
 Once the server is running (`make start`), add it as a custom connector:
 
 1. Settings → Connectors → Add custom connector
-2. Name: `local-ontology`
+2. Name: `local-notes`
 3. URL: `http://127.0.0.1:8000/mcp`
 
 Older Desktop versions that read `claude_desktop_config.json` directly
@@ -90,7 +90,7 @@ Windows: `%APPDATA%\Claude\claude_desktop_config.json`) can instead add:
 ```json
 {
   "mcpServers": {
-    "local-ontology": {
+    "local-notes": {
       "url": "http://127.0.0.1:8000/mcp"
     }
   }
@@ -98,7 +98,7 @@ Windows: `%APPDATA%\Claude\claude_desktop_config.json`) can instead add:
 ```
 
 then restart Claude Desktop. Either way, its tools appear grouped under
-`local-ontology`, e.g. `mcp__local-ontology__new_note`.
+`local-notes`, e.g. `mcp__local-notes__new_note`.
 
 ## Use it from Claude Code
 
@@ -106,7 +106,7 @@ With the server running on localhost (`make start`, or a bare
 `mcp-local-notes-server`), register it once from this repo's directory:
 
 ```sh
-claude mcp add --transport http local-ontology http://127.0.0.1:8000/mcp
+claude mcp add --transport http local-notes http://127.0.0.1:8000/mcp
 ```
 
 This uses the default `local` scope -- private to you, specific to this
@@ -114,7 +114,13 @@ project directory. Use `--scope project` instead if you want the
 registration checked into a shared `.mcp.json` for teammates, or
 `--scope user` to make it available from every project on this machine.
 Verify with `claude mcp list`; tools then appear the same way, as
-`mcp__local-ontology__<tool>`.
+`mcp__local-notes__<tool>`.
+
+The name `local-notes` is just this repo's suggested registration
+alias -- it's the client-side label you choose with `claude mcp add`
+(or the "Name" field in Claude Desktop), not something the server
+itself enforces, so registering it under a different name works too;
+the tool prefix simply follows whatever alias you pick.
 
 If your `MCP_BIND_HOST`/`MCP_PORT` differ from the defaults, use the
 matching host/port in the URL above in either client.
@@ -169,7 +175,7 @@ lacrosse coaching:
 
 First list what topics exist, then search within one:
 
-> "What topics are in my local-ontology vocabulary?"
+> "What topics are in my local-notes vocabulary?"
 
 This calls `list_topics`, returning every topic currently declared in
 `tbox.ttl` (e.g. `lacrosse-coaching`, from the notes created above).
