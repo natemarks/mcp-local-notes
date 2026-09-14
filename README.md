@@ -102,13 +102,19 @@ then restart Claude Desktop. Either way, its tools appear grouped under
 
 ## Use it from Claude Code
 
+With the server running on localhost (`make start`, or a bare
+`mcp-local-notes-server`), register it once from this repo's directory:
+
 ```sh
 claude mcp add --transport http local-ontology http://127.0.0.1:8000/mcp
 ```
 
-Add `--scope project` to scope the registration to this repo instead of
-your user config. Verify with `claude mcp list`; tools then appear the
-same way, as `mcp__local-ontology__<tool>`.
+This uses the default `local` scope -- private to you, specific to this
+project directory. Use `--scope project` instead if you want the
+registration checked into a shared `.mcp.json` for teammates, or
+`--scope user` to make it available from every project on this machine.
+Verify with `claude mcp list`; tools then appear the same way, as
+`mcp__local-ontology__<tool>`.
 
 If your `MCP_BIND_HOST`/`MCP_PORT` differ from the defaults, use the
 matching host/port in the URL above in either client.
