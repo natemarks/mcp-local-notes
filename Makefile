@@ -86,4 +86,9 @@ stop: ## stop and remove the running container
 logs: ## follow the running container's logs
 	docker logs -f $(IMAGE)
 
-.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv build start stop logs
+deploy-skill: ## install/update the local-notes Claude skill in ~/.claude/skills
+	mkdir -p $(HOME)/.claude/skills/local-notes
+	cp .claude/skills/local-notes/SKILL.md $(HOME)/.claude/skills/local-notes/SKILL.md
+	@echo "Deployed local-notes skill to $(HOME)/.claude/skills/local-notes/SKILL.md"
+
+.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv build start stop logs deploy-skill

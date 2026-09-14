@@ -119,6 +119,24 @@ Verify with `claude mcp list`; tools then appear the same way, as
 If your `MCP_BIND_HOST`/`MCP_PORT` differ from the defaults, use the
 matching host/port in the URL above in either client.
 
+## Claude skill
+
+This repo ships a Claude Code skill at `.claude/skills/local-notes/`
+that teaches an assistant the workflow for each tool below: which
+fields are required vs. optional, and -- critically -- to check
+`list_topics`/`list_types` (or a note's current frontmatter) *before*
+asking the user what to use, rather than guessing or asking blind.
+It's available automatically to any Claude Code session run from this
+repo. To make it available from every project on your machine instead:
+
+```sh
+make deploy-skill
+```
+
+This copies `.claude/skills/local-notes/SKILL.md` into
+`~/.claude/skills/local-notes/SKILL.md`, overwriting only that one
+file -- nothing else under `~/.claude/skills` is touched.
+
 ## Registered tools
 
 `new_note`, `update_note`, `add_topic`, `add_class`, `sync_note`,
