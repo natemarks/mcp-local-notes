@@ -127,6 +127,11 @@ matching host/port in the URL above in either client.
 
 ## Example prompts
 
+Want to try these against a disposable corpus instead of your real
+notes? See [DEMO.md](DEMO.md) -- `make demo` spins up a throwaway
+notes directory and walks through a larger version of these same
+prompts end to end.
+
 ### Creating documents with the Divio documentation types
 
 The [Divio documentation system](https://docs.divio.com/documentation-system/introduction/)

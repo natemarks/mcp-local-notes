@@ -75,6 +75,7 @@ Run `make help` to see all available targets. Key ones:
 | `make unit-update-golden` | Update golden files (this project doesn't currently use golden-file testing, but the target exists for consistency) |
 | `make integration` | Run integration tests (none exist yet; the marker is reserved) |
 | `make build` / `make start` / `make stop` / `make logs` | Docker packaging -- build the image, run/stop the server as a background container, follow its logs |
+| `make demo` | Run a throwaway notes corpus (`mktemp -d`) in the foreground, for trying prompts without touching real notes -- see `DEMO.md` |
 | `make .venv` | Create the virtualenv and install dependencies + the package |
 
 ## Testing Strategy
