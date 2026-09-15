@@ -13,12 +13,15 @@ runner = CliRunner()
 
 @pytest.mark.unit
 def test_archive_note_via_cli(_notes_dir: Path) -> None:
-    """archive-note sets status via the CLI, keeping the file in place."""
+    """archive-note sets status via the CLI, keeping the file in place,
+    and prints its absolute path."""
     runner.invoke(app, NEW_SPARQL_BASICS_CLI_ARGS)
     result = runner.invoke(app, ["archive-note", "sparql-basics"])
     assert result.exit_code == 0
     assert "archived note: sparql-basics" in result.output
-    assert (_notes_dir / "sparql-basics.md").exists()
+    note_file = _notes_dir / "sparql-basics.md"
+    assert note_file.exists()
+    assert str(note_file.resolve()) in result.output
 
 
 @pytest.mark.unit

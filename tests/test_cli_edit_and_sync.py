@@ -13,22 +13,26 @@ runner = CliRunner()
 
 @pytest.mark.unit
 def test_update_note_renames_via_cli(_notes_dir: Path) -> None:
-    """update-note --title renames the note via the CLI."""
+    """update-note --title renames the note via the CLI, printing its
+    absolute path (the id/filename never changes on a rename)."""
     runner.invoke(app, NEW_SPARQL_BASICS_CLI_ARGS)
     result = runner.invoke(
         app, ["update-note", "sparql-basics", "--title", "Intro to SPARQL"]
     )
     assert result.exit_code == 0
     assert "updated note: sparql-basics" in result.output
+    assert str((_notes_dir / "sparql-basics.md").resolve()) in result.output
 
 
 @pytest.mark.unit
 def test_sync_note_via_cli(_notes_dir: Path) -> None:
-    """sync-note regenerates the ABox entry via the CLI."""
+    """sync-note regenerates the ABox entry via the CLI, printing the
+    note's absolute path."""
     runner.invoke(app, NEW_SPARQL_BASICS_CLI_ARGS)
     result = runner.invoke(app, ["sync-note", "sparql-basics"])
     assert result.exit_code == 0
     assert "synced note: sparql-basics" in result.output
+    assert str((_notes_dir / "sparql-basics.md").resolve()) in result.output
 
 
 @pytest.mark.unit

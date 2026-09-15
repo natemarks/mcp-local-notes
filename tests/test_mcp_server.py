@@ -35,10 +35,12 @@ def _call(name: str, arguments: dict) -> CallToolResult:
     return result
 
 
-def _success_payload(result: CallToolResult) -> object:
+def _success_payload(result: CallToolResult) -> dict[str, Any]:
     """A successful call's return value, JSON-decoded from its text content
     (the SDK only populates structured_content when an output schema is
-    declared, which these tools deliberately don't need)."""
+    declared, which these tools deliberately don't need). Every tool this
+    helper is used for returns a dict (a note's frontmatter+path, or the
+    validate report), never a bare list/scalar."""
     return json.loads(result.content[0].text)  # type: ignore[union-attr]
 
 
@@ -59,7 +61,9 @@ def test_registers_every_core_operation() -> None:
 
 @pytest.mark.unit
 def test_new_note_tool_creates_a_file(_notes_dir: Path) -> None:
-    """The new_note tool creates the note file, same as the CLI command."""
+    """The new_note tool creates the note file, same as the CLI command,
+    and reports its absolute path so a caller can find it without
+    knowing NOTES_DIR."""
     result = _call(
         "new_note",
         {
@@ -69,7 +73,68 @@ def test_new_note_tool_creates_a_file(_notes_dir: Path) -> None:
         },
     )
     assert result.is_error is False
-    assert (_notes_dir / "sparql-basics.md").exists()
+    note_file = _notes_dir / "sparql-basics.md"
+    assert note_file.exists()
+    payload = _success_payload(result)
+    assert payload["path"] == str(note_file.resolve())
+
+
+@pytest.mark.unit
+def test_update_note_tool_reports_absolute_path(_notes_dir: Path) -> None:
+    """update_note also reports the note's absolute path, since editing
+    is the other half of "creating or editing a note" the path is for."""
+    _call(
+        "new_note",
+        {
+            "title": "SPARQL basics",
+            "tags": ["knowledge-graphs"],
+            "note_type": "Concept",
+        },
+    )
+
+    result = _call("update_note", {"note_id": "sparql-basics", "add_tags": []})
+
+    assert result.is_error is False
+    payload = _success_payload(result)
+    assert payload["path"] == str((_notes_dir / "sparql-basics.md").resolve())
+
+
+@pytest.mark.unit
+def test_sync_note_tool_reports_absolute_path(_notes_dir: Path) -> None:
+    """sync_note (recovery after a hand-edit) also reports the path."""
+    _call(
+        "new_note",
+        {
+            "title": "SPARQL basics",
+            "tags": ["knowledge-graphs"],
+            "note_type": "Concept",
+        },
+    )
+
+    result = _call("sync_note", {"note_id": "sparql-basics"})
+
+    assert result.is_error is False
+    payload = _success_payload(result)
+    assert payload["path"] == str((_notes_dir / "sparql-basics.md").resolve())
+
+
+@pytest.mark.unit
+def test_archive_note_tool_reports_absolute_path(_notes_dir: Path) -> None:
+    """archive_note (setting status) also reports the path."""
+    _call(
+        "new_note",
+        {
+            "title": "SPARQL basics",
+            "tags": ["knowledge-graphs"],
+            "note_type": "Concept",
+        },
+    )
+
+    result = _call("archive_note", {"note_id": "sparql-basics"})
+
+    assert result.is_error is False
+    payload = _success_payload(result)
+    assert payload["path"] == str((_notes_dir / "sparql-basics.md").resolve())
 
 
 @pytest.mark.unit

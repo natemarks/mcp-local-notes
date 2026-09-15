@@ -27,6 +27,16 @@ def _corpus(tmp_path: Path) -> Corpus:
 
 
 @pytest.mark.unit
+def test_note_path_is_notes_dir_slash_id_dot_md(corpus: Corpus) -> None:
+    """note_path is the one place the <id>.md filename convention lives,
+    so adapters can report a note's absolute path without reinventing it."""
+    assert (
+        notes.note_path("sparql-basics", corpus.notes_dir)
+        == corpus.notes_dir / "sparql-basics.md"
+    )
+
+
+@pytest.mark.unit
 def test_new_note_creates_file_and_abox_entry(corpus: Corpus) -> None:
     """A valid new_note writes the note file and its ABox entry atomically."""
     note = mint_sparql_basics(corpus)

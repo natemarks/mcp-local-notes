@@ -17,6 +17,7 @@ from mcp_local_notes.core.config import (
     load_env_file,
 )
 from mcp_local_notes.core.errors import NotesError
+from mcp_local_notes.core.models import Note
 from mcp_local_notes.ontology.tbox import ROOT_TYPE
 
 app = typer.Typer(
@@ -59,6 +60,14 @@ def handle_notes_errors(func: F) -> F:
     return wrapper  # type: ignore[return-value]
 
 
+def _echo_note(action: str, note: Note) -> None:
+    """Print "<action> note: <id> (<absolute path>)" -- every command
+    that creates or edits a note shares this, so the user can find the
+    file directly rather than needing to know NOTES_DIR."""
+    path = notes.note_path(note.id, get_corpus().notes_dir).resolve()
+    typer.echo(f"{action} note: {note.id} ({path})")
+
+
 @app.command("add-topic")
 @handle_notes_errors
 def add_topic_command(name: str) -> None:
@@ -96,7 +105,7 @@ def new_note_command(
         aliases=alias,
         approve_topics=approve_topic,
     )
-    typer.echo(f"created note: {note.id}")
+    _echo_note("created", note)
 
 
 @app.command("update-note")
@@ -122,7 +131,7 @@ def update_note_command(  # pylint: disable=too-many-arguments
         remove_related=remove_related,
         approve_topics=approve_topic,
     )
-    typer.echo(f"updated note: {note.id}")
+    _echo_note("updated", note)
 
 
 @app.command("sync-note")
@@ -130,7 +139,7 @@ def update_note_command(  # pylint: disable=too-many-arguments
 def sync_note_command(note_id: str) -> None:
     """Regenerate a single note's ABox entry from its current frontmatter."""
     note = notes.sync_note(note_id, get_corpus())
-    typer.echo(f"synced note: {note.id}")
+    _echo_note("synced", note)
 
 
 @app.command("rebuild-abox")
@@ -146,7 +155,7 @@ def rebuild_abox_command() -> None:
 def archive_note_command(note_id: str) -> None:
     """Archive a note: sets status, keeps the file and ABox entry."""
     note = notes.archive_note(note_id, get_corpus())
-    typer.echo(f"archived note: {note.id}")
+    _echo_note("archived", note)
 
 
 @app.command("delete-note")

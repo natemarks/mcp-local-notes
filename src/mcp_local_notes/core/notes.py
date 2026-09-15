@@ -18,17 +18,19 @@ from mcp_local_notes.ontology import abox, tbox
 from mcp_local_notes.ontology.slug import normalize
 
 
-def _note_path(note_id: str, notes_dir: Path) -> Path:
+def note_path(note_id: str, notes_dir: Path) -> Path:
+    """A note's file path -- the one place the <id>.md convention lives,
+    so adapters can report it without reinventing the naming scheme."""
     return notes_dir / f"{note_id}.md"
 
 
 def get_note(note_id: str, notes_dir: Path) -> Note:
     """Load a single note's current on-disk frontmatter."""
-    return load_markdown(_note_path(note_id, notes_dir).read_text())
+    return load_markdown(note_path(note_id, notes_dir).read_text())
 
 
 def _write_note(note: Note, notes_dir: Path) -> None:
-    _note_path(note.id, notes_dir).write_text(dump_markdown(note))
+    note_path(note.id, notes_dir).write_text(dump_markdown(note))
 
 
 def _scan_existing_notes(notes_dir: Path) -> list[Note]:
@@ -161,7 +163,7 @@ def new_note(  # pylint: disable=too-many-arguments
         abox.replace_note(graph, note_id, note.to_frontmatter())
         abox.save(graph, corpus.abox_path)
     except Exception:
-        _note_path(note_id, corpus.notes_dir).unlink(missing_ok=True)
+        note_path(note_id, corpus.notes_dir).unlink(missing_ok=True)
         raise
 
     return note
@@ -169,7 +171,7 @@ def new_note(  # pylint: disable=too-many-arguments
 
 def _check_related_exists(note_id: str, notes_dir: Path) -> None:
     """Reject a related/part_of reference to a note id that doesn't exist."""
-    if not _note_path(note_id, notes_dir).exists():
+    if not note_path(note_id, notes_dir).exists():
         raise NotesError(
             Rule.RELATED_NOTE_NOT_FOUND,
             f"related note not found: {note_id!r} does not exist",
@@ -332,7 +334,7 @@ def delete_note(note_id: str, corpus: Corpus, confirm: bool = False) -> None:
             {"note_id": note_id, "referencing_note_ids": referencing},
         )
 
-    _note_path(note_id, corpus.notes_dir).unlink(missing_ok=True)
+    note_path(note_id, corpus.notes_dir).unlink(missing_ok=True)
 
     graph = abox.load(corpus.abox_path)
     abox.remove_note(graph, note_id)

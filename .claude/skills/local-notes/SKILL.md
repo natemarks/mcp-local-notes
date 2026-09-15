@@ -9,10 +9,11 @@ Every note is tagged from a controlled topic vocabulary and classified under a d
 
 ## The pattern every workflow follows
 
-1. **Look up the decision context before asking anything.** Call whatever read-only tool tells you what already exists: `list_topics` and `list_types` before creating or retagging a note, `find_notes_by_topic` before pointing a `related` field at another note. There is no `get_note` tool -- to see a note's current frontmatter before editing it, read `<NOTES_DIR>/<id>.md` directly, or use `find_notes_by_topic` if you already know one of its tags. Done when you can name, for every field you're about to ask about, what already exists to choose from.
+1. **Look up the decision context before asking anything.** Call whatever read-only tool tells you what already exists: `list_topics` and `list_types` before creating or retagging a note, `find_notes_by_topic` before pointing a `related` field at another note. There is no `get_note` tool -- if you need a note's current frontmatter and don't already have its path from an earlier response this session, use `find_notes_by_topic` if you know one of its tags. Done when you can name, for every field you're about to ask about, what already exists to choose from.
 2. **Ask for each required field one at a time**, stating the existing options and your recommendation alongside the question. Reusing an existing topic or type is the default recommendation; propose creating a new one only when nothing existing fits. Done when every required field has an explicit answer.
 3. **Ask for each optional field the same way**, skipping only a field the user's own request already answered. Done when every optional field has been asked about or explicitly skipped.
 4. **Call the tool.** A rejection carries a specific rule and details (`UNKNOWN_TOPIC`, `DELETE_BLOCKED_BY_REFERENCES`, etc.) -- read it, turn it back into a question per steps 2-3, rather than retrying blind or dropping information the user already gave you.
+5. **Report the absolute path.** `new_note`, `update_note`, `sync_note`, and `archive_note` all return a `path` field alongside the note's frontmatter -- tell the user that path, not just the note's id or title. Done when the user has actually seen it, since it's the only way to find or open the file directly.
 
 ## Worked example: creating a note
 
@@ -23,6 +24,7 @@ User: "Create a note about SPARQL basics."
 3. Ask: "What type should this be? You already have `Concept` -- reuse that, or add a new one?"
 4. Ask about `aliases` only if the user hasn't already ruled it out; skip `approve_topics` entirely unless step 2 picked a new topic.
 5. Call `new_note` with the answers.
+6. Relay the returned `path`, e.g. "Created at /home/nate/notes/sparql-basics.md."
 
 ## Workflows
 

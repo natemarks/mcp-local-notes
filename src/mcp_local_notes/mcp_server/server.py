@@ -26,6 +26,7 @@ from mcp_local_notes.core.config import (
     load_env_file,
 )
 from mcp_local_notes.core.errors import NotesError
+from mcp_local_notes.core.models import Note
 from mcp_local_notes.ontology.tbox import ROOT_TYPE
 
 mcp = MCPServer("local-ontology")
@@ -67,6 +68,15 @@ def handle_notes_errors(func: F) -> F:
     return wrapper  # type: ignore[return-value]
 
 
+def _note_response(note: Note) -> dict:
+    """A note's frontmatter plus its absolute file path -- every tool that
+    creates or edits a note reports this, so a caller (or the user) can
+    find the file directly rather than needing to know NOTES_DIR."""
+    result = note.to_frontmatter()
+    result["path"] = str(notes.note_path(note.id, get_notes_dir()).resolve())
+    return result
+
+
 @mcp.tool()
 @handle_notes_errors
 def new_note(
@@ -92,7 +102,7 @@ def new_note(
         approve_topics=approve_topics or [],
     )
     # pylint: enable=duplicate-code
-    return note.to_frontmatter()
+    return _note_response(note)
 
 
 @mcp.tool()
@@ -117,7 +127,7 @@ def update_note(  # pylint: disable=too-many-arguments,too-many-positional-argum
         remove_related=remove_related,
         approve_topics=approve_topics,
     )
-    return note.to_frontmatter()
+    return _note_response(note)
 
 
 @mcp.tool()
@@ -141,7 +151,7 @@ def add_class(name: str, subclass_of: str = ROOT_TYPE) -> dict:
 def sync_note(note_id: str) -> dict:
     """Regenerate a single note's ABox entry from its current frontmatter."""
     note = notes.sync_note(note_id, get_corpus())
-    return note.to_frontmatter()
+    return _note_response(note)
 
 
 @mcp.tool()
@@ -178,7 +188,7 @@ def list_types() -> list[str]:
 def archive_note(note_id: str) -> dict:
     """Archive a note: sets status, keeps the file and ABox entry."""
     note = notes.archive_note(note_id, get_corpus())
-    return note.to_frontmatter()
+    return _note_response(note)
 
 
 @mcp.tool()

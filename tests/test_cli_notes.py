@@ -13,10 +13,13 @@ runner = CliRunner()
 
 @pytest.mark.unit
 def test_new_note_creates_a_file(_notes_dir: Path) -> None:
-    """new-note creates the note file with the expected slug filename."""
+    """new-note creates the note file with the expected slug filename,
+    and prints its absolute path so the user can find it directly."""
     result = runner.invoke(app, NEW_SPARQL_BASICS_CLI_ARGS)
     assert result.exit_code == 0
-    assert (_notes_dir / "sparql-basics.md").exists()
+    note_file = _notes_dir / "sparql-basics.md"
+    assert note_file.exists()
+    assert str(note_file.resolve()) in result.output
 
 
 @pytest.mark.unit
