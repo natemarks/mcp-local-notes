@@ -168,6 +168,7 @@ def test_main_runs_streamable_http_with_configured_port(
     config = fake_uvicorn_server["config"]
     assert config.host == "0.0.0.0"
     assert config.port == 9123
+    assert config.log_level == "info"
     assert fake_uvicorn_server["ran"] is True
 
 

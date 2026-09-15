@@ -217,7 +217,10 @@ def main() -> None:
     Builds the uvicorn server directly (mcp.run()'s own convenience
     wrapper hardcodes host/port/log_level with no way to also set
     timeout_graceful_shutdown) so shutdown stays bounded -- see
-    GRACEFUL_SHUTDOWN_SECONDS.
+    GRACEFUL_SHUTDOWN_SECONDS. This mirrors MCPServer.run_streamable_http_async
+    closely enough (same host/port/log_level/app construction) that an
+    SDK upgrade changing what it passes to uvicorn.Config should be
+    reflected here too.
     """
     try:
         load_env_file()
