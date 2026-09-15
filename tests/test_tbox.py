@@ -54,10 +54,17 @@ def test_list_topic_names_sorted() -> None:
 
 
 @pytest.mark.unit
-def test_list_type_names_includes_note_root() -> None:
-    """list_type_names includes the :Note root, not just added subclasses."""
+def test_list_type_names_includes_bootstrap_types() -> None:
+    """list_type_names includes the :Note root and the bootstrap's
+    pre-seeded Divio documentation types, not just added subclasses."""
     graph = _bootstrap_graph()
-    assert tbox.list_type_names(graph) == ["Note"]
+    assert tbox.list_type_names(graph) == [
+        "Explanation",
+        "How-to",
+        "Note",
+        "Reference",
+        "Tutorial",
+    ]
 
 
 @pytest.mark.unit

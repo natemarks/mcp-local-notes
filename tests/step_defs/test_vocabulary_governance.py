@@ -12,6 +12,7 @@ import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
 from rdflib.namespace import RDFS, SKOS
 
+from conftest import MINIMAL_TBOX
 from mcp_local_notes.core import vocabulary
 from mcp_local_notes.core.errors import NotesError, Rule
 from mcp_local_notes.ontology import tbox
@@ -19,6 +20,18 @@ from mcp_local_notes.ontology import tbox
 pytestmark = pytest.mark.unit
 
 scenarios("vocabulary_governance.feature")
+
+
+@pytest.fixture(name="tbox_path")
+def _tbox_path(tmp_path: Path) -> Path:
+    """A minimal tbox with just the :Note root -- deliberately not a copy
+    of the shipped bootstrap, so this feature's exact-count assertions
+    (e.g. "all six declared types") stay correct regardless of whatever
+    types the product's bootstrap happens to pre-seed."""
+    path = tmp_path / "tbox.ttl"
+    path.write_text(MINIMAL_TBOX)
+    return path
+
 
 _PHRASE_TO_RULE = {
     "topic already exists": Rule.TOPIC_ALREADY_EXISTS,

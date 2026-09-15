@@ -161,11 +161,11 @@ prompts end to end.
 The [Divio documentation system](https://docs.divio.com/documentation-system/introduction/)
 identifies four document purposes -- tutorial, how-to, reference,
 explanation -- that should stay distinct rather than blended together.
-They map directly onto this project's single-valued `type` field: add
-each once as a note type (`add_class("Tutorial")`, `add_class("How-to")`,
-`add_class("Reference")`, `add_class("Explanation")`), then classify every
-new note as exactly one of them. Examples in the domain of beginner
-lacrosse coaching:
+They map directly onto this project's single-valued `type` field, and
+the bootstrap `tbox.ttl` ships with all four already declared
+(`Tutorial`, `How-to`, `Reference`, `Explanation`) -- no `add_class`
+step needed, just classify every new note as exactly one of them.
+Examples in the domain of beginner lacrosse coaching:
 
 **Tutorial** (learning-oriented, hand-holds a first-time coach)
 > "Create a note titled 'Running Your First Beginner Practice', type

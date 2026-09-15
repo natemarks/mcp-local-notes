@@ -13,6 +13,15 @@ from mcp_local_notes.core.models import Note, parse_frontmatter
 
 BOOTSTRAP_TBOX = Path(__file__).parent.parent / "notes" / "tbox.ttl"
 EMPTY_ABOX = "@prefix : <https://notes.natenite.net/ontology#> .\n"
+MINIMAL_TBOX = """\
+@prefix : <https://notes.natenite.net/ontology#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+:Note a owl:Class .
+:topics a skos:ConceptScheme .
+"""
 
 
 def seed_tbox_with_defaults(path: Path) -> None:
