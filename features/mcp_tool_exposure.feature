@@ -33,8 +33,7 @@ Feature: Expose ontology operations as local MCP tools
     Given the "local-ontology" MCP server is not running or not registered
     When an assistant looks for "local-ontology" tools
     Then it should find none
-    And it should fall back to telling Nate the local ontology tools aren't available
-    Rather than guessing at file edits by hand
+    And it should fall back to telling Nate the local ontology tools aren't available, rather than guessing at file edits by hand
 
   Scenario: CLI remains usable without any assistant or MCP server
     Given no MCP client is involved
