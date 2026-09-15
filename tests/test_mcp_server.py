@@ -6,6 +6,7 @@ Uses the MCP SDK's in-process list_tools/call_tool -- no real HTTP socket.
 import asyncio
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from mcp.types import CallToolResult
@@ -127,27 +128,67 @@ def test_find_notes_by_topic_tool_rejects_unknown_topic(
     assert result.structured_content["rule"] == "UNKNOWN_TOPIC"
 
 
+@pytest.fixture(name="fake_uvicorn_server")
+def _fake_uvicorn_server(
+    monkeypatch: pytest.MonkeyPatch,
+) -> dict[str, Any]:
+    """Replaces uvicorn.Server so main() never actually binds a socket or
+    blocks waiting for connections -- captures the Config it was built
+    with instead."""
+    captured: dict[str, Any] = {}
+
+    class _FakeServer:  # pylint: disable=too-few-public-methods
+        """Stands in for uvicorn.Server's (config) -> .run() shape."""
+
+        def __init__(self, config: Any) -> None:
+            captured["config"] = config
+
+        def run(self) -> None:
+            """Record that main() actually called .run()."""
+            captured["ran"] = True
+
+    monkeypatch.setattr("uvicorn.Server", _FakeServer)
+    return captured
+
+
 @pytest.mark.unit
 def test_main_runs_streamable_http_with_configured_port(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_uvicorn_server: dict[str, Any],
 ) -> None:
-    """main() wires the server to Streamable HTTP at the configured port,
-    the one place transport/port selection actually happens."""
+    """main() wires the server to Streamable HTTP at the configured
+    host/port, the one place transport/host/port selection happens."""
     monkeypatch.chdir(tmp_path)  # no .env.json here
     monkeypatch.setenv("MCP_PORT", "9123")
     monkeypatch.setenv("MCP_HOST", "0.0.0.0")
-    calls = {}
 
-    def _fake_run(**kwargs: object) -> None:
-        calls.update(kwargs)
-
-    monkeypatch.setattr(mcp, "run", _fake_run)
     main()
-    assert calls == {
-        "transport": "streamable-http",
-        "host": "0.0.0.0",
-        "port": 9123,
-    }
+
+    config = fake_uvicorn_server["config"]
+    assert config.host == "0.0.0.0"
+    assert config.port == 9123
+    assert config.log_level == "info"
+    assert fake_uvicorn_server["ran"] is True
+
+
+@pytest.mark.unit
+def test_main_bounds_graceful_shutdown(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_uvicorn_server: dict[str, Any],
+) -> None:
+    """main() sets a bounded timeout_graceful_shutdown -- without it,
+    uvicorn waits indefinitely for any still-open client connection
+    (the normal case for a real MCP client) before Ctrl+C can complete,
+    which also means the Makefile's own SIGINT trap never gets to run."""
+    monkeypatch.chdir(tmp_path)
+
+    main()
+
+    timeout = fake_uvicorn_server["config"].timeout_graceful_shutdown
+    assert timeout is not None
+    assert 0 < timeout <= 10
 
 
 @pytest.mark.unit
@@ -155,11 +196,11 @@ def test_main_logs_no_env_file_when_absent(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture,
+    fake_uvicorn_server: dict[str, Any],
 ) -> None:
     """With no .env.json in the working directory, main() says so, and
     still reports the resolved config values."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(mcp, "run", lambda **_kwargs: None)
 
     main()
 
@@ -168,6 +209,7 @@ def test_main_logs_no_env_file_when_absent(
     assert "NOTES_DIR=" in out
     assert "MCP_PORT=" in out
     assert "MCP_HOST=" in out
+    assert fake_uvicorn_server["ran"] is True
 
 
 @pytest.mark.unit
@@ -175,6 +217,7 @@ def test_main_logs_env_file_and_picks_up_its_values(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture,
+    fake_uvicorn_server: dict[str, Any],
 ) -> None:
     """A present .env.json is named in the log, and its values (when not
     already set in the environment) actually drive the server config."""
@@ -184,15 +227,13 @@ def test_main_logs_env_file_and_picks_up_its_values(
     (tmp_path / ".env.json").write_text(
         '{"NOTES_DIR": "/from/env/json", "MCP_PORT": 9321}'
     )
-    calls = {}
-    monkeypatch.setattr(mcp, "run", lambda **kwargs: calls.update(kwargs))
 
     main()
 
     out = capsys.readouterr().out
     assert "loaded config from .env.json" in out
     assert "NOTES_DIR=/from/env/json" in out
-    assert calls["port"] == 9321
+    assert fake_uvicorn_server["config"].port == 9321
 
 
 @pytest.mark.unit
