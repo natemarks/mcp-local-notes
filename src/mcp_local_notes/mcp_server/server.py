@@ -9,6 +9,7 @@ matching core.* function and renders whatever it returns or raises.
 import functools
 from typing import Any, Callable, TypeVar
 
+import uvicorn
 from mcp.server import MCPServer
 from mcp.types import CallToolResult, TextContent
 
@@ -28,6 +29,15 @@ from mcp_local_notes.core.errors import NotesError
 from mcp_local_notes.ontology.tbox import ROOT_TYPE
 
 mcp = MCPServer("local-ontology")
+
+# uvicorn's own default (timeout_graceful_shutdown=None) waits indefinitely
+# for every open connection to close on SIGINT/SIGTERM -- a real MCP client
+# (Claude Desktop/Code) keeps its Streamable HTTP connection open for the
+# whole session, so a bare Ctrl+C would hang forever waiting for a client
+# that has no reason to disconnect. Bounding it lets the server (and the
+# Makefile's own SIGINT trap, which only runs once this process exits)
+# actually shut down promptly.
+GRACEFUL_SHUTDOWN_SECONDS = 3
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -203,6 +213,11 @@ def main() -> None:
 
     A malformed .env.json exits with a clear message rather than an
     uncaught traceback, before anything binds.
+
+    Builds the uvicorn server directly (mcp.run()'s own convenience
+    wrapper hardcodes host/port/log_level with no way to also set
+    timeout_graceful_shutdown) so shutdown stays bounded -- see
+    GRACEFUL_SHUTDOWN_SECONDS.
     """
     try:
         load_env_file()
@@ -214,9 +229,17 @@ def main() -> None:
         f"MCP_HOST={get_mcp_host()}",
         flush=True,
     )
-    mcp.run(
-        transport="streamable-http", host=get_mcp_host(), port=get_mcp_port()
+
+    host = get_mcp_host()
+    app = mcp.streamable_http_app(host=host)
+    config = uvicorn.Config(
+        app,
+        host=host,
+        port=get_mcp_port(),
+        log_level=mcp.settings.log_level.lower(),
+        timeout_graceful_shutdown=GRACEFUL_SHUTDOWN_SECONDS,
     )
+    uvicorn.Server(config).run()
 
 
 if __name__ == "__main__":
