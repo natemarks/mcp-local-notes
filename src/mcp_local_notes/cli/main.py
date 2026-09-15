@@ -64,7 +64,7 @@ def _echo_note(action: str, note: Note) -> None:
     """Print "<action> note: <id> (<absolute path>)" -- every command
     that creates or edits a note shares this, so the user can find the
     file directly rather than needing to know NOTES_DIR."""
-    path = notes.note_path(note.id, get_corpus().notes_dir).resolve()
+    path = notes.note_path(note.id, get_corpus().notes_dir)
     typer.echo(f"{action} note: {note.id} ({path})")
 
 

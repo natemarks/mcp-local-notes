@@ -19,9 +19,10 @@ from mcp_local_notes.ontology.slug import normalize
 
 
 def note_path(note_id: str, notes_dir: Path) -> Path:
-    """A note's file path -- the one place the <id>.md convention lives,
-    so adapters can report it without reinventing the naming scheme."""
-    return notes_dir / f"{note_id}.md"
+    """A note's absolute file path -- the one place the <id>.md convention
+    (and its resolution to an absolute path) lives, so adapters can report
+    it without reinventing the naming scheme or re-resolving it themselves."""
+    return (notes_dir / f"{note_id}.md").resolve()
 
 
 def get_note(note_id: str, notes_dir: Path) -> Note:

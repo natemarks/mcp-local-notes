@@ -29,10 +29,11 @@ def _corpus(tmp_path: Path) -> Corpus:
 @pytest.mark.unit
 def test_note_path_is_notes_dir_slash_id_dot_md(corpus: Corpus) -> None:
     """note_path is the one place the <id>.md filename convention lives,
-    so adapters can report a note's absolute path without reinventing it."""
+    so adapters can report a note's absolute path without reinventing it
+    or re-resolving it themselves."""
     assert (
         notes.note_path("sparql-basics", corpus.notes_dir)
-        == corpus.notes_dir / "sparql-basics.md"
+        == (corpus.notes_dir / "sparql-basics.md").resolve()
     )
 
 

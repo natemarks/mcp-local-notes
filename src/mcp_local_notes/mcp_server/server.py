@@ -73,7 +73,7 @@ def _note_response(note: Note) -> dict:
     creates or edits a note reports this, so a caller (or the user) can
     find the file directly rather than needing to know NOTES_DIR."""
     result = note.to_frontmatter()
-    result["path"] = str(notes.note_path(note.id, get_notes_dir()).resolve())
+    result["path"] = str(notes.note_path(note.id, get_notes_dir()))
     return result
 
 
