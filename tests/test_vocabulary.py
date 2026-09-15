@@ -64,14 +64,19 @@ def test_list_topics_returns_current_vocabulary(tbox_path: Path) -> None:
 
 @pytest.mark.unit
 def test_list_types_returns_current_vocabulary(tbox_path: Path) -> None:
-    """list_types returns every declared type, including the :Note root."""
-    for name in ("Person", "Project", "Meeting", "Reference", "Concept"):
+    """list_types returns every declared type, including the :Note root and
+    the bootstrap's pre-seeded Divio documentation types."""
+    for name in ("Person", "Project", "Meeting", "Article", "Concept"):
         vocabulary.add_class(name, tbox_path)
     assert vocabulary.list_types(tbox_path) == [
+        "Article",
         "Concept",
+        "Explanation",
+        "How-to",
         "Meeting",
         "Note",
         "Person",
         "Project",
         "Reference",
+        "Tutorial",
     ]

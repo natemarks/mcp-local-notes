@@ -20,9 +20,9 @@ This:
    stop any other running server first (`make stop`, or whatever else
    is bound to that port) if it complains.
 2. Creates a fresh temp directory (`mktemp -d`) and seeds it with this
-   project's bootstrap `tbox.ttl`/`abox.ttl` -- the same empty starting
-   ontology a fresh clone ships with (just the `:Note` root type, no
-   topics or types declared yet).
+   project's bootstrap `tbox.ttl`/`abox.ttl` -- the same starting
+   ontology a fresh clone ships with: the `:Note` root plus the four
+   Divio documentation types pre-declared (below), no topics yet.
 3. Runs `mcp-local-notes-server` in the foreground, `NOTES_DIR` pointed
    at that temp directory. Because it's the same host/port your
    `local-notes` registration already points at, your assistant
@@ -39,25 +39,18 @@ what got created -- `rm -rf` it whenever you're ready to throw it away.
 The [Divio documentation system](https://docs.divio.com/documentation-system/introduction/)
 identifies four document purposes -- tutorial, how-to, reference,
 explanation -- that should stay distinct rather than blended together.
-They map onto this project's single-valued `type` field: declare each
-as a note type, then write one note of each type, all about beginner
-lacrosse coaching.
+They map onto this project's single-valued `type` field, and this
+project's bootstrap `tbox.ttl` ships with all four already declared
+(`Tutorial`, `How-to`, `Reference`, `Explanation`), so there's no
+`add_class` step here -- just create one note of each type, all about
+beginner lacrosse coaching.
 
-```
-Add a note type called "Tutorial".
-```
-
-```
-Add a note type called "How-to".
-```
-
-```
-Add a note type called "Reference".
-```
-
-```
-Add a note type called "Explanation".
-```
+This is exactly what the [`local-notes` skill](README.md#claude-skill)
+is for: paste the prompts below to an assistant that has it installed
+(`make deploy-skill`, or it's already available from this repo's own
+`.claude/skills/`) and it checks `list_types`/`list_topics` itself
+before creating anything -- seeing `Tutorial` already exists, it uses
+it directly rather than asking you to add it first.
 
 ```
 Create a note titled "Running Your First Beginner Practice", type

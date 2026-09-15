@@ -20,6 +20,28 @@ pytestmark = pytest.mark.unit
 
 scenarios("vocabulary_governance.feature")
 
+_MINIMAL_TBOX = """\
+@prefix : <https://notes.natenite.net/ontology#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+:Note a owl:Class .
+:topics a skos:ConceptScheme .
+"""
+
+
+@pytest.fixture(name="tbox_path")
+def _tbox_path(tmp_path: Path) -> Path:
+    """A minimal tbox with just the :Note root -- deliberately not a copy
+    of the shipped bootstrap, so this feature's exact-count assertions
+    (e.g. "all six declared types") stay correct regardless of whatever
+    types the product's bootstrap happens to pre-seed."""
+    path = tmp_path / "tbox.ttl"
+    path.write_text(_MINIMAL_TBOX)
+    return path
+
+
 _PHRASE_TO_RULE = {
     "topic already exists": Rule.TOPIC_ALREADY_EXISTS,
     "type already exists": Rule.TYPE_ALREADY_EXISTS,
