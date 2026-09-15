@@ -192,6 +192,32 @@ def test_main_bounds_graceful_shutdown(
 
 
 @pytest.mark.unit
+def test_main_suppresses_uvicorns_reraised_sigint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """uvicorn.Server.serve()'s capture_signals() deliberately re-raises
+    the SIGINT it caught (via signal.raise_signal) after its own graceful
+    shutdown already completed -- inside our asyncio_run() call, the
+    now-restored default handler turns that into a KeyboardInterrupt
+    propagating out of Server.run(). By that point uvicorn has already
+    logged "Application shutdown complete", so main() should swallow it
+    rather than let a KeyboardInterrupt traceback print on every Ctrl+C."""
+    monkeypatch.chdir(tmp_path)
+
+    class _FakeServer:  # pylint: disable=too-few-public-methods
+        def __init__(self, config: Any) -> None:
+            del config
+
+        def run(self) -> None:
+            """Simulate uvicorn's own post-shutdown signal re-raise."""
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr("uvicorn.Server", _FakeServer)
+
+    main()  # must not raise
+
+
+@pytest.mark.unit
 def test_main_logs_no_env_file_when_absent(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

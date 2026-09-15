@@ -221,6 +221,13 @@ def main() -> None:
     closely enough (same host/port/log_level/app construction) that an
     SDK upgrade changing what it passes to uvicorn.Config should be
     reflected here too.
+
+    uvicorn's own capture_signals() deliberately re-raises the SIGINT it
+    caught, via signal.raise_signal(), once its graceful shutdown is
+    already done -- a courtesy for callers that want standard signal
+    semantics. We don't: the Makefile's own trap already handles the
+    user-facing cleanup message, so that re-raised KeyboardInterrupt is
+    swallowed here rather than printing a traceback on every Ctrl+C.
     """
     try:
         load_env_file()
@@ -242,7 +249,10 @@ def main() -> None:
         log_level=mcp.settings.log_level.lower(),
         timeout_graceful_shutdown=GRACEFUL_SHUTDOWN_SECONDS,
     )
-    uvicorn.Server(config).run()
+    try:
+        uvicorn.Server(config).run()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
