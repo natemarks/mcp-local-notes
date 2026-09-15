@@ -9,10 +9,18 @@
 # Divio documentation types (see https://docs.divio.com/documentation-system)
 # alongside the :Note root; further types are added via add_class.
 :Note a owl:Class .
-:Tutorial a owl:Class ; rdfs:subClassOf :Note .
-:How-to a owl:Class ; rdfs:subClassOf :Note .
-:Reference a owl:Class ; rdfs:subClassOf :Note .
-:Explanation a owl:Class ; rdfs:subClassOf :Note .
+
+:Tutorial a owl:Class ;
+    rdfs:subClassOf :Note .
+
+:How-to a owl:Class ;
+    rdfs:subClassOf :Note .
+
+:Reference a owl:Class ;
+    rdfs:subClassOf :Note .
+
+:Explanation a owl:Class ;
+    rdfs:subClassOf :Note .
 
 # Controlled topic vocabulary (skos:ConceptScheme / skos:Concept). Empty for
 # now; topics are added via add_topic.
