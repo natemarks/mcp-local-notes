@@ -1,0 +1,14 @@
+{
+  "name": "mcp-local-notes",
+  "description": "A local markdown notes corpus kept in sync with a Turtle/RDF ontology, managed through MCP tools and a companion Claude Code skill.",
+  "owner": {
+    "name": "Nate Marks"
+  },
+  "plugins": [
+    {
+      "name": "local-notes",
+      "source": ".",
+      "description": "Manage a local markdown notes corpus synced to a Turtle/RDF ontology, through MCP tools and a companion skill that teaches the workflow."
+    }
+  ]
+}
