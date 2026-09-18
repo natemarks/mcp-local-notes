@@ -22,7 +22,11 @@ make build && make start
 This builds the image and runs the server as a background container,
 bind-mounting `./notes` (which ships with a bootstrap `tbox.ttl`/`abox.ttl`)
 into the container and publishing the MCP endpoint at
-`http://127.0.0.1:8000/mcp`.
+`http://127.0.0.1:8000/mcp`. Pointing `NOTES_DIR` at a different,
+empty directory instead (see the table below) also works -- `make
+start` seeds it with that same bootstrap `tbox.ttl`/`abox.ttl` the
+first time, rather than leaving every tool call to fail against a
+directory with no ontology in it.
 
 Other targets:
 
