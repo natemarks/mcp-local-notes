@@ -65,7 +65,7 @@ server logs which file it used and the resolved values at startup:
 
 ```
 loaded config from .env.json
-NOTES_DIR=./notes MCP_PORT=8000 MCP_HOST=127.0.0.1
+NOTES_DIR=/home/nate/notes MCP_PORT=8000 MCP_HOST=127.0.0.1
 ```
 
 or, with no file present:
@@ -75,30 +75,48 @@ no .env.json found; using the process environment and defaults
 NOTES_DIR=./notes MCP_PORT=8000 MCP_HOST=127.0.0.1
 ```
 
+The server never expands `$VARIABLES` or a leading `~` in `NOTES_DIR`
+-- it's read as a literal path (via `.env.json`, or an exported shell
+var reaching the process's already-expanded environment). A value
+like `"$HOME/notes"` or `"~/notes"` set in `.env.json` is *not*
+expanded and creates a literal `./$HOME/notes` or `./~/notes`
+directory relative to the current working directory instead. Use an
+absolute path (as in `.env.example.json` above) to avoid this.
+
 ## Use it from Claude Desktop
 
-Once the server is running (`make start`), add it as a custom connector:
+Claude Code connects to a local, unencrypted `http://` MCP server
+directly, with the simple URL-based config shown below in "Use it
+from Claude Code" -- Claude Desktop does not. Desktop needs a stdio
+bridge in front of it instead, via the
+[`mcp-remote`](https://www.npmjs.com/package/mcp-remote) package.
 
-1. Settings → Connectors → Add custom connector
-2. Name: `local-notes`
-3. URL: `http://127.0.0.1:8000/mcp`
-
-Older Desktop versions that read `claude_desktop_config.json` directly
-(macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`;
-Windows: `%APPDATA%\Claude\claude_desktop_config.json`) can instead add:
+Once the server is running (`make start`), edit
+`claude_desktop_config.json` directly (macOS: `~/Library/Application
+Support/Claude/claude_desktop_config.json`; Windows:
+`%APPDATA%\Claude\claude_desktop_config.json`) to add:
 
 ```json
 {
   "mcpServers": {
     "local-notes": {
-      "url": "http://127.0.0.1:8000/mcp"
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote@latest",
+        "http://localhost:8000/mcp",
+        "--allow-http",
+        "--transport",
+        "http-first"
+      ]
     }
   }
 }
 ```
 
-then restart Claude Desktop. Either way, its tools appear grouped under
-`local-notes`, e.g. `mcp__local-notes__new_note`.
+then restart Claude Desktop. Its tools then appear grouped under
+`local-notes`, e.g. `mcp__local-notes__new_note` -- same as Claude
+Code.
 
 ## Use it from Claude Code
 
