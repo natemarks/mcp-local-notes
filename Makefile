@@ -108,4 +108,9 @@ deploy-skill: ## install/update the local-notes Claude skill in ~/.claude/skills
 	cp .claude/skills/local-notes/SKILL.md $(HOME)/.claude/skills/local-notes/SKILL.md
 	@echo "Deployed local-notes skill to $(HOME)/.claude/skills/local-notes/SKILL.md"
 
-.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv build start stop logs demo deploy-skill
+skill-zip: ## build local-notes-skill.zip for Claude Desktop's Settings > Customize > Skills upload
+	rm -f local-notes-skill.zip
+	cd .claude/skills && zip -r ../../local-notes-skill.zip local-notes -x '.*'
+	@echo "Built local-notes-skill.zip -- upload it via Settings > Customize > Skills"
+
+.PHONY: help black black-check pylint mypy shellcheck unit unit-update-golden integration static static-check clean-cache clean-venv build start stop logs demo deploy-skill skill-zip
