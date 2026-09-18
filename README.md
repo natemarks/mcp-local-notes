@@ -143,6 +143,12 @@ the tool prefix simply follows whatever alias you pick.
 If your `MCP_BIND_HOST`/`MCP_PORT` differ from the defaults, use the
 matching host/port in the URL above in either client.
 
+If this project later ships a Claude Code plugin bundling the same
+server (tracked separately), install it via this manual path *or* the
+plugin, not both -- running both at once creates two separate
+registrations with different tool-name prefixes for the same
+underlying server, which works but is unnecessary and confusing.
+
 Registering the server is only half the setup -- see "Claude skill"
 below for the companion piece that teaches an assistant *how* to use
 these tools well, rather than guessing at fields or asking blind.
