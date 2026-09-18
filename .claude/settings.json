@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__local-notes__*",
+      "mcp__plugin_local-notes_local-notes__*"
+    ]
+  }
+}

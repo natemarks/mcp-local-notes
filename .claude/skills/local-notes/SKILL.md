@@ -1,6 +1,9 @@
 ---
 name: local-notes
 description: Create, edit, and organize notes in this project's Turtle/RDF-backed notes corpus through its MCP tools. Use when the user wants to create a note, edit or retag an existing note, add a topic or note type, list the vocabulary, search notes by topic, recover the ontology after hand-edited notes, validate the corpus, or archive/delete a note.
+allowed-tools:
+  - mcp__local-notes__*
+  - mcp__plugin_local-notes_local-notes__*
 ---
 
 # Local Notes

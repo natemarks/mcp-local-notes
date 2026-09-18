@@ -143,15 +143,25 @@ the tool prefix simply follows whatever alias you pick.
 If your `MCP_BIND_HOST`/`MCP_PORT` differ from the defaults, use the
 matching host/port in the URL above in either client.
 
+Registering the server is only half the setup -- see "Claude skill"
+below for the companion piece that teaches an assistant *how* to use
+these tools well, rather than guessing at fields or asking blind.
+
 ## Claude skill
 
-This repo ships a Claude Code skill at `.claude/skills/local-notes/`
-that teaches an assistant the workflow for each tool below: which
-fields are required vs. optional, and -- critically -- to check
-`list_topics`/`list_types` (or a note's current frontmatter) *before*
-asking the user what to use, rather than guessing or asking blind.
-It's available automatically to any Claude Code session run from this
-repo. To make it available from every project on your machine instead:
+This repo ships a skill at `.claude/skills/local-notes/` that pairs
+with the MCP server registered above: it teaches an assistant the
+workflow for each tool below -- which fields are required vs.
+optional, and -- critically -- to check `list_topics`/`list_types`
+(or a note's current frontmatter) *before* asking the user what to
+use, rather than guessing or asking blind. It also carries an
+`allowed-tools` grant covering both the manual and plugin tool-name
+prefixes, so a fresh session isn't prompted tool-by-tool through its
+first turn.
+
+**Claude Code**: it's available automatically to any session run from
+this repo. To make it available from every project on your machine
+instead:
 
 ```sh
 make deploy-skill
@@ -160,6 +170,19 @@ make deploy-skill
 This copies `.claude/skills/local-notes/SKILL.md` into
 `~/.claude/skills/local-notes/SKILL.md`, overwriting only that one
 file -- nothing else under `~/.claude/skills` is touched.
+
+**Claude Desktop**: Skills there are installed differently -- as a
+ZIP upload via Settings > Customize > Skills, which requires "code
+execution" enabled on your account (see [Use skills in
+Claude](https://support.claude.com/en/articles/12512180-use-skills-in-claude)).
+Build the ZIP with:
+
+```sh
+make skill-zip
+```
+
+This produces `local-notes-skill.zip` from
+`.claude/skills/local-notes/`, ready to upload as-is.
 
 ## Registered tools
 
