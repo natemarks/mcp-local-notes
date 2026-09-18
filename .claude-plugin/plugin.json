@@ -1,0 +1,14 @@
+{
+  "name": "local-notes",
+  "description": "Manage a local markdown notes corpus synced to a Turtle/RDF ontology, through MCP tools and a companion skill that teaches the workflow.",
+  "author": {
+    "name": "Nate Marks"
+  },
+  "skills": "./.claude/skills/",
+  "mcpServers": {
+    "local-notes": {
+      "type": "http",
+      "url": "http://127.0.0.1:8000/mcp"
+    }
+  }
+}

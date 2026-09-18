@@ -143,11 +143,29 @@ the tool prefix simply follows whatever alias you pick.
 If your `MCP_BIND_HOST`/`MCP_PORT` differ from the defaults, use the
 matching host/port in the URL above in either client.
 
-If this project later ships a Claude Code plugin bundling the same
-server (tracked separately), install it via this manual path *or* the
-plugin, not both -- running both at once creates two separate
-registrations with different tool-name prefixes for the same
-underlying server, which works but is unnecessary and confusing.
+### Or install as a plugin
+
+To register the server and install the skill below in one step
+instead:
+
+```sh
+claude plugin marketplace add natemarks/mcp-local-notes
+claude plugin install local-notes@mcp-local-notes
+```
+
+This registers the same server -- its tools then appear as
+`mcp__plugin_local-notes_local-notes__<tool>` instead of
+`mcp__local-notes__<tool>` -- and installs the skill automatically, no
+separate `make deploy-skill` step. The bundled server URL
+(`.claude-plugin/plugin.json`'s `mcpServers.local-notes.url`) is fixed
+at `http://127.0.0.1:8000/mcp`; if you've customized `MCP_PORT`, edit
+that file to match, since plugin manifests can't read `.env.json` or
+`MCP_PORT`.
+
+Install via the manual path above *or* the plugin, not both -- running
+both at once creates two separate registrations with different
+tool-name prefixes for the same underlying server, which works but is
+unnecessary and confusing.
 
 Registering the server is only half the setup -- see "Claude skill"
 below for the companion piece that teaches an assistant *how* to use
