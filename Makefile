@@ -79,6 +79,7 @@ start: build ## run the MCP server as a background container
 		echo "Seeded $(NOTES_DIR) with the bootstrap ontology (tbox.ttl/abox.ttl)"; \
 	fi
 	docker run -d --name $(IMAGE) \
+		--restart unless-stopped \
 		-v $(abspath $(NOTES_DIR)):/notes \
 		-p $(MCP_BIND_HOST):$(MCP_PORT):8000 \
 		$(IMAGE)

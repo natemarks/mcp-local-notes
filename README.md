@@ -28,6 +28,10 @@ start` seeds it with that same bootstrap `tbox.ttl`/`abox.ttl` the
 first time, rather than leaving every tool call to fail against a
 directory with no ontology in it.
 
+The container runs with `--restart unless-stopped`, so it survives
+Docker daemon restarts and host reboots automatically -- `make stop`
+is still the way to actually take it down for good.
+
 Other targets:
 
 ```sh
