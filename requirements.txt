@@ -5,8 +5,8 @@ mcp==2.2.0
 types-PyYAML==6.0.12.20260906
 
 pytest==9.1.1
-pytest-bdd==8.1.0
+pytest-bdd==9.0.0
 black==26.5.1
-pylint==4.0.8
-mypy==2.3.1
+pylint==4.1.1
+mypy==2.4.0
 pre-commit==4.6.2
